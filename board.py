@@ -1,13 +1,11 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
 import numpy as np
 
 
 class Board(object):
-    WHITE = 1
-    BLACK = -1
     BLANK = 0
+    WHITE = 1
+    BLACK = 2
     DIRECTIONS = [(1, 0), (-1, 0),
                   (0, 1), (0, -1),
                   (1, 1), (-1, -1),
