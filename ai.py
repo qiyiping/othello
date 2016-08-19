@@ -5,7 +5,12 @@ import numpy as np
 from othello import Board
 from util import Hash
 
+import sys
+import logging
+
 class AlphaBeta(object):
+    MAX_VAL = float("inf")
+    MIN_VAL = float("-inf")
     def __init__(self, evaluator, depth, cacheable=False):
         """https://en.wikipedia.org/wiki/Alpha-beta_pruning
         http://web.cs.ucla.edu/~rosen/161/notes/alphabeta.html
@@ -24,9 +29,13 @@ class AlphaBeta(object):
     def depth(self):
         return self._depth
 
+    @depth.setter
+    def depth(self, val):
+        self._depth = val
+
     def search(self, board, player):
-        alpha = float("-inf")
-        beta = float("inf")
+        alpha = AlphaBeta.MIN_VAL
+        beta = AlphaBeta.MAX_VAL
         return self._alpha_beta_search(board, player, alpha, beta, self._depth, True)
 
     def _get_val(self, board):
@@ -43,9 +52,9 @@ class AlphaBeta(object):
 
         act = None
         if is_maximizing_player:
-            r = float("-inf")
+            r = AlphaBeta.MIN_VAL
         else:
-            r = float("inf")
+            r = AlphaBeta.MAX_VAL
 
         actions = board.feasible_pos(player)
         opponent = Board.opponent(player)
@@ -57,13 +66,13 @@ class AlphaBeta(object):
                 if is_maximizing_player:
                     if r < v:
                         act = (i, j)
-                    alpha = np.max(v, alpha)
-                    r = np.max(r, v)
+                    alpha = max(v, alpha)
+                    r = max(r, v)
                 else:
                     if r > v:
                         act = (i, j)
-                    beta = np.min(v, beta)
-                    r = np.min(r, v)
+                    beta = min(v, beta)
+                    r = min(r, v)
 
                 if alpha >= beta:
                     break
@@ -91,15 +100,19 @@ class SimpleBot(Agent):
     def __init__(self, evaluator, depth, role=0):
         super(SimpleBot, self).__init__(role)
         self._evaluator = evaluator
+        self._evaluator.depth = depth
         self._searcher = AlphaBeta(evaluator, depth)
 
     def play(self, board):
+        if np.sum(board.board == Board.BLANK) < 15:
+            self._searcher.depth = 15
+            self._evaluator.depth = 15
         _, action = self._searcher.search(board, self.role)
         return action
 
-class CMDLineHumanPlayer(Agent):
+class CmdLineHumanPlayer(Agent):
     def __init__(self, role=0):
-        super(CMDLineHumanPlayer, self).__init__(role)
+        super(CmdLineHumanPlayer, self).__init__(role)
 
     def play(self, board):
         pos = board.feasible_pos(self.role)

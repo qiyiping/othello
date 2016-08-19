@@ -2,6 +2,7 @@
 import numpy as np
 from contextlib import contextmanager
 import sys
+import traceback
 
 class Board(object):
     BLANK = 0
@@ -21,11 +22,8 @@ class Board(object):
     def __init__(self, size=8):
         assert size % 2 == 0
         self._size = size
-        self.reset()
-
-    def reset(self):
-        self._board = np.zeros((self._size, self._size), dtype=np.int)
-        i = self._size / 2
+        self._board = np.zeros((size, size), dtype=np.int)
+        i = size / 2
         self._board[i-1][i-1] = Board.WHITE
         self._board[i-1][i] = Board.BLACK
         self._board[i][i] = Board.WHITE
@@ -105,7 +103,12 @@ class Board(object):
 
     def print_for_player(self, player):
         prt = sys.stdout.write
-        pos = self.feasible_pos(player)
+
+        if player not in (Board.BLACK, Board.WHITE):
+            pos = []
+        else:
+            pos = self.feasible_pos(player)
+
         rows, columns = self.board.shape
         for i in range(0, rows):
             for j in range(0, columns):
@@ -116,7 +119,8 @@ class Board(object):
                     prt(str(self.board[i][j]))
                 prt(" ")
             prt("\n")
-        prt("\nBlack score: {0}, White score: {1}\n".format(self.score(Board.BLACK), self.score(Board.WHITE)))
+        prt("\nBlack score: {0}, White score: {1}\n".format(self.score(Board.BLACK),
+                                                            self.score(Board.WHITE)))
         sys.stdout.flush()
 
 class Game(object):
@@ -129,13 +133,25 @@ class Game(object):
         board = Board()
         turn = 0
         while not board.is_terminal_state():
-            if len(board.feasible_pos(self._players[turn].role)) == 0:
-                turn = (turn+1) % 2
-            board.print_for_player(self._players[turn].role)
-            try:
-                i,j = self._players[turn].play(board)
-                board.flip(i, j, self._players[turn].role)
-                turn = (turn+1) % 2
-            except:
-                print "player {0} failed".format(self._players[turn].role)
-                break
+            pos = board.feasible_pos(self._players[turn].role)
+            if len(pos) > 0:
+                board.print_for_player(self._players[turn].role)
+                try:
+                    i,j = self._players[turn].play(board)
+                    board.flip(i, j, self._players[turn].role)
+                    idx = pos.index((i,j))
+                    print "player {0}: {1}".format(self._players[turn].role,
+                                                   chr(ord("A") + idx))
+                except:
+                    print "player {0} failed".format(self._players[turn].role)
+                    print "-"*60
+                    traceback.print_exc()
+                    print "-"*60
+                    break
+            turn = (turn+1) % 2
+
+        print '-'*60
+        print 'final result'
+        print '-'*60
+        board.print_for_player(Board.BLANK)
+        print '-'*60
