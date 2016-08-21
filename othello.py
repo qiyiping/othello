@@ -66,6 +66,10 @@ class Board(object):
     def score(self, player):
         return np.sum(self._board == player)
 
+    @property
+    def blanks(self):
+        return np.sum(self.board == Board.BLANK)
+
     def __str__(self):
         return str(self._board)
 
@@ -125,8 +129,8 @@ class Board(object):
 
 class Game(object):
     def __init__(self, black_player, white_player):
-        black_player.role = Board.BLACK
-        white_player.role = Board.WHITE
+        assert black_player.role == Board.BLACK
+        assert white_player.role == Board.WHITE
         self._players = [black_player, white_player]
 
     def run(self):

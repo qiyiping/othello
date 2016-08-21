@@ -11,19 +11,12 @@ import logging
 class AlphaBeta(object):
     MAX_VAL = float("inf")
     MIN_VAL = float("-inf")
-    def __init__(self, evaluator, depth, cacheable=False):
+    def __init__(self, evaluator, depth):
         """https://en.wikipedia.org/wiki/Alpha-beta_pruning
         http://web.cs.ucla.edu/~rosen/161/notes/alphabeta.html
         """
         self._evaluator = evaluator
-        self._hash = Hash()
-        self._cache = dict()
-        self._cacheable = cacheable
         self._depth = depth
-
-    @property
-    def cacheable(self):
-        return self._cacheable
 
     @property
     def depth(self):
@@ -36,15 +29,9 @@ class AlphaBeta(object):
     def search(self, board, player):
         alpha = AlphaBeta.MIN_VAL
         beta = AlphaBeta.MAX_VAL
-        return self._alpha_beta_search(board, player, alpha, beta, self._depth, True)
-
-    def _get_val(self, board):
-        h = self._hash(board.board)
-        return self._cache.get(h)
-
-    def _set_val(self, board, val):
-        h = self._hash(board.board)
-        self._cache[h] = val
+        return self._alpha_beta_search(board, player,
+                                       alpha, beta,
+                                       self._depth, True)
 
     def _alpha_beta_search(self, board, player, alpha, beta, depth, is_maximizing_player):
         if board.is_terminal_state() or depth == 0:
@@ -61,8 +48,9 @@ class AlphaBeta(object):
         if len(actions) > 0:
             for i,j in actions:
                 with board.flip2(i, j, player):
-                    v, _ = self._alpha_beta_search(board, opponent, alpha, beta, depth-1, not is_maximizing_player)
-
+                    v, _ = self._alpha_beta_search(board, opponent,
+                                                   alpha, beta,
+                                                   depth-1, not is_maximizing_player)
                 if is_maximizing_player:
                     if r < v:
                         act = (i, j)
@@ -77,9 +65,17 @@ class AlphaBeta(object):
                 if alpha >= beta:
                     break
         else:
-            r, _ = self._alpha_beta_search(board, opponent, alpha, beta, depth, not is_maximizing_player)
-
+            r, _ = self._alpha_beta_search(board, opponent,
+                                           alpha, beta,
+                                           depth, not is_maximizing_player)
         return r, act
+
+
+class ScoreEvaluator(object):
+    def __init__(self, role):
+        self._role = role
+    def __call__(self, board):
+        return board.score(self._role)
 
 class Agent(object):
     def __init__(self, role):
@@ -97,21 +93,22 @@ class Agent(object):
         self._role = value
 
 class SimpleBot(Agent):
-    def __init__(self, evaluator, depth, role=0):
+    def __init__(self, evaluator, depth, role):
         super(SimpleBot, self).__init__(role)
-        self._evaluator = evaluator
-        self._evaluator.depth = depth
-        self._searcher = AlphaBeta(evaluator, depth)
+        self._one_step_searcher = AlphaBeta(evaluator, 1)
+        score_evaluator = ScoreEvaluator(role)
+        self._final_searcher = AlphaBeta(score_evaluator, depth)
+        self._depth = depth
 
     def play(self, board):
-        if np.sum(board.board == Board.BLANK) < 15:
-            self._searcher.depth = 15
-            self._evaluator.depth = 15
-        _, action = self._searcher.search(board, self.role)
+        if board.blanks <= self._depth:
+            _, action = self._final_searcher.search(board, self.role)
+        else:
+            _, action = self._one_step_searcher.search(board, self.role)
         return action
 
 class CmdLineHumanPlayer(Agent):
-    def __init__(self, role=0):
+    def __init__(self, role):
         super(CmdLineHumanPlayer, self).__init__(role)
 
     def play(self, board):
