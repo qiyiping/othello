@@ -66,6 +66,11 @@ class Board(object):
     def score(self, player):
         return np.sum(self._board == player)
 
+    def wins(self, player):
+        s1 = self.score(player)
+        s2 = self.score(Board.opponent(player))
+        return s1 > s2
+
     @property
     def blanks(self):
         return np.sum(self.board == Board.BLANK)
@@ -79,6 +84,10 @@ class Board(object):
     @property
     def board(self):
         return self._board
+
+    @property
+    def board2(self):
+        return self._board * 2.0 - 3.0
 
     @property
     def size(self):
@@ -128,10 +137,17 @@ class Board(object):
         sys.stdout.flush()
 
 class Game(object):
-    def __init__(self, black_player, white_player):
+    def __init__(self, black_player, white_player, verbose=True):
         assert black_player.role == Board.BLACK
         assert white_player.role == Board.WHITE
         self._players = [black_player, white_player]
+        self._verbose = verbose
+        self._black_wins = 0
+        self._white_wins = 0
+        self._ties = 0
+
+    def game_stat(self):
+        return self._black_wins, self._white_wins, self._ties
 
     def run(self):
         board = Board()
@@ -139,23 +155,35 @@ class Game(object):
         while not board.is_terminal_state():
             pos = board.feasible_pos(self._players[turn].role)
             if len(pos) > 0:
-                board.print_for_player(self._players[turn].role)
+                if self._verbose:
+                    board.print_for_player(self._players[turn].role)
                 try:
                     i,j = self._players[turn].play(board)
                     board.flip(i, j, self._players[turn].role)
                     idx = pos.index((i,j))
-                    print "player {0}: {1}".format(self._players[turn].role,
-                                                   chr(ord("A") + idx))
+                    if self._verbose:
+                        print "player {0}: {1}".format(self._players[turn].role, chr(ord("A") + idx))
                 except:
-                    print "player {0} failed".format(self._players[turn].role)
-                    print "-"*60
-                    traceback.print_exc()
-                    print "-"*60
+                    if self._verbose:
+                        print "player {0} failed".format(self._players[turn].role)
+                        print "-"*60
+                        traceback.print_exc()
+                        print "-"*60
                     break
             turn = (turn+1) % 2
 
-        print '-'*60
-        print 'final result'
-        print '-'*60
-        board.print_for_player(Board.BLANK)
-        print '-'*60
+        if self._verbose:
+            print '-'*60
+            print 'final result'
+            print '-'*60
+            board.print_for_player(Board.BLANK)
+            print '-'*60
+
+        black_score = board.score(Board.BLACK)
+        white_score = board.score(Board.WHITE)
+        if black_score > white_score:
+            self._black_wins += 1
+        elif white_score > black_score:
+            self._white_wins += 1
+        else:
+            self._ties += 1

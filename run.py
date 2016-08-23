@@ -5,6 +5,8 @@ import numpy as np
 
 from othello import Board, Game
 from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta
+from tdl import TDLAgent
+import time
 
 class SimpleEvaluator(object):
     def __init__(self, role):
@@ -36,16 +38,19 @@ class SimpleEvaluator(object):
         return np.sum(self._w * (board.board == self._role))
 
 
-
-
-
 def main():
-    logging.basicConfig(filename='test.log', filemode='w', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     evaluator = SimpleEvaluator(Board.BLACK)
-    bot = SimpleBot(evaluator, 10, Board.BLACK)
+    bot = SimpleBot(evaluator, 3, Board.BLACK)
     human = CmdLineHumanPlayer(Board.WHITE)
-    game = Game(bot, human)
-    game.run()
+    tdl_agent = TDLAgent(role=Board.WHITE, update=True, alpha=1.0, epsilon=0.3)
+    game = Game(bot, tdl_agent, False)
+    for i in range(1, 10001):
+        game.run()
+        if i % 100 == 0:
+            ts = int(time.time())
+            tdl_agent.save_model("./model/{0}_{1}_{2}.cpt".format(tdl_agent.role, i, ts))
+            b,w,t = game.game_stat()
+            print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
 
 if __name__ == '__main__':
     main()
