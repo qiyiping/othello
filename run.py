@@ -48,7 +48,7 @@ def main():
         game.run()
         if i % 100 == 0:
             ts = int(time.time())
-            tdl_agent.save_model("./model/{0}_{1}_{2}.cpt".format(tdl_agent.role, i, ts))
+            tdl_agent.save_model("./model/{0}_{1}_{2}.ckpt".format(tdl_agent.role, i, ts))
             b,w,t = game.game_stat()
             print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
 

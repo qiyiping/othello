@@ -12,7 +12,7 @@ class OthelloModel(object):
         b1 = tf.Variable(tf.zeros([1,1]), name="bias1")
         w2 = tf.Variable(tf.truncated_normal([4,1], stddev=0.2), name="weight2")
         b2 = tf.Variable(tf.zeros([1,1]), name="bias2")
-        self.params = {"w1": w1, "w2": w2, "b1": b1, "b2": b2}
+        self.params = [w1, b1, w2, b2]
 
         # model
         w11 = tf.reshape(w1, (64,1))
@@ -31,7 +31,7 @@ class OthelloModel(object):
         cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.logits, self.y))
 
         # optimizer
-        optimizer = tf.train.AdagradOptimizer(learning_rate=0.05)
+        optimizer = tf.train.AdagradOptimizer(learning_rate=0.01)
         # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
         self.opt_op = optimizer.minimize(cost)
 
