@@ -41,9 +41,9 @@ class SimpleEvaluator(object):
 def main():
     evaluator = SimpleEvaluator(Board.BLACK)
     bot = SimpleBot(evaluator, 3, Board.BLACK)
-    human = CmdLineHumanPlayer(Board.WHITE)
+    # human = CmdLineHumanPlayer(Board.WHITE)
     tdl_agent = TDLAgent(role=Board.WHITE, update=True, alpha=1.0, epsilon=0.3)
-    game = Game(bot, tdl_agent, False)
+    game = Game(bot, tdl_agent, 1)
     for i in range(1, 10001):
         game.run()
         if i % 100 == 0:

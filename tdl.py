@@ -28,11 +28,11 @@ class OthelloModel(object):
         self.prediction = tf.nn.sigmoid(self.logits)
 
         # cost
-        cost = tf.nn.sigmoid_cross_entropy_with_logits(self.logits, self.y)
+        cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.logits, self.y))
 
         # optimizer
-        # optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
+        optimizer = tf.train.AdagradOptimizer(learning_rate=0.05)
+        # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
         self.opt_op = optimizer.minimize(cost)
 
         self.init_op = tf.initialize_all_variables()
@@ -87,7 +87,7 @@ class TDLAgent(Agent):
         for i,j in pos:
             with board.flip2(i, j, self.role):
                 if board.is_terminal_state():
-                    if board.wins(player):
+                    if board.wins(self.role):
                         next_val.append(1.0)
                     else:
                         next_val.append(0.0)

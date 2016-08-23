@@ -137,7 +137,7 @@ class Board(object):
         sys.stdout.flush()
 
 class Game(object):
-    def __init__(self, black_player, white_player, verbose=True):
+    def __init__(self, black_player, white_player, verbose=0):
         assert black_player.role == Board.BLACK
         assert white_player.role == Board.WHITE
         self._players = [black_player, white_player]
@@ -155,16 +155,16 @@ class Game(object):
         while not board.is_terminal_state():
             pos = board.feasible_pos(self._players[turn].role)
             if len(pos) > 0:
-                if self._verbose:
+                if self._verbose > 1:
                     board.print_for_player(self._players[turn].role)
                 try:
                     i,j = self._players[turn].play(board)
                     board.flip(i, j, self._players[turn].role)
                     idx = pos.index((i,j))
-                    if self._verbose:
+                    if self._verbose > 1:
                         print "player {0}: {1}".format(self._players[turn].role, chr(ord("A") + idx))
                 except:
-                    if self._verbose:
+                    if self._verbose > 0:
                         print "player {0} failed".format(self._players[turn].role)
                         print "-"*60
                         traceback.print_exc()
@@ -172,7 +172,7 @@ class Game(object):
                     break
             turn = (turn+1) % 2
 
-        if self._verbose:
+        if self._verbose > 1:
             print '-'*60
             print 'final result'
             print '-'*60
