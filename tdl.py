@@ -61,13 +61,14 @@ class TDLAgent(Agent):
     def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None):
         super(TDLAgent, self).__init__(role)
         self._model = OthelloModel()
-        if model_file != None:
+        if model_file is not None:
             self._model.restore_params(model_file)
         else:
             self._model.init_params()
         self._alpha = alpha
         self._update = update
         self._epsilon = epsilon
+        self._prev_state = None
 
     def _epsilon_greedy(self, pos, val):
         r = np.random.rand()
@@ -80,23 +81,41 @@ class TDLAgent(Agent):
     def save_model(self, model_path):
         self._model.save_params(model_path)
 
+    def _is_first_step(self, board):
+        return board.blanks >= 59
+
+    def _update_param(self, v):
+        prev_val = self._model.predict(self._prev_state)[0][0]
+        target = (1.0-self._alpha) * prev_val + self._alpha * v
+        self._model.update_param(self._prev_state, [[target]])
+
     def play(self, board):
-        curr_val = self._model.predict(board.board2)[0][0]
+        if self._is_first_step(board):
+            self._prev_state = None
         pos = board.feasible_pos(self.role)
-        next_val = []
+        next_vals = []
         for i,j in pos:
             with board.flip2(i, j, self.role):
                 if board.is_terminal_state():
                     if board.wins(self.role):
-                        next_val.append(1.0)
+                        next_vals.append(1.0)
                     else:
-                        next_val.append(0.0)
+                        next_vals.append(0.0)
                 else:
-                    next_val.append(self._model.predict(board.board2)[0][0])
+                    next_vals.append(self._model.predict(board.board2)[0][0])
 
-        pos,val = self._epsilon_greedy(pos, next_val)
+        p,v = self._epsilon_greedy(pos, next_vals)
         if self._update:
-            target = (1.0-self._alpha) * curr_val + self._alpha * val
-            self._model.update_param(board.board2, [[target]])
+            if  self._prev_state is not None:
+                self._update_param(v)
+            with board.flip2(p[0], p[1], self.role):
+                self._prev_state = board.board2.copy()
 
-        return pos
+        return p
+
+    def tell_result(self, board):
+        if self._update and self._prev_state is not None:
+            v = 0.0
+            if board.wins(self.role):
+                v = 1.0
+            self._update_param(v)

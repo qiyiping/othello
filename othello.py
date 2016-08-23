@@ -179,6 +179,9 @@ class Game(object):
             board.print_for_player(Board.BLANK)
             print '-'*60
 
+        for p in self._players:
+            p.tell_result(board)
+
         black_score = board.score(Board.BLACK)
         white_score = board.score(Board.WHITE)
         if black_score > white_score:

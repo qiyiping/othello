@@ -84,6 +84,9 @@ class Agent(object):
     def play(self, board):
         pass
 
+    def tell_result(self, board):
+        pass
+
     @property
     def role(self):
         return self._role
