@@ -3,9 +3,9 @@ import logging
 
 import numpy as np
 
-from othello import Board, Game
+from othello import Board, Game, Replay
 from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta
-from tdl import TDLAgent
+from tdl import TDLAgent, TDLProcessor
 import time
 
 class SimpleEvaluator(object):
@@ -38,7 +38,9 @@ class SimpleEvaluator(object):
         return np.sum(self._w * (board.board == self._role))
 
 
-def main():
+import sys
+
+def self_play():
     evaluator = SimpleEvaluator(Board.BLACK)
     bot = SimpleBot(evaluator, 3, Board.BLACK)
     # human = CmdLineHumanPlayer(Board.WHITE)
@@ -52,5 +54,12 @@ def main():
             b,w,t = game.game_stat()
             print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
 
+
+def replay():
+    r = Replay("./database/skatgame/logbook.gam.gz")
+    processor = TDLProcessor(Board.WHITE)
+    r.replay(processor)
+    processor.save_model("./model/logbook.ckpt")
+
 if __name__ == '__main__':
-    main()
+    replay()

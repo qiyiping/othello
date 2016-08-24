@@ -136,6 +136,40 @@ class Board(object):
                                                             self.score(Board.WHITE)))
         sys.stdout.flush()
 
+
+import gzip
+class Replay(object):
+    def __init__(self, database_file):
+        self._database_file = database_file
+
+    def _parse(self, l):
+        moves = []
+        tokens = l.strip().split(':')
+        steps = len(tokens[0])/3
+        for idx in range(0, steps):
+            if l[3*idx] == '+':
+                player = Board.BLACK
+            else:
+                player = Board.WHITE
+            i = ord(l[3*idx+1]) - ord('a')
+            j = int(l[3*idx+2]) - 1
+            moves.append((player, i, j))
+        result = int(tokens[1].strip().split(' ')[0])
+        return (moves, result)
+
+    def _replay_once(self, processor):
+        with gzip.open(self._database_file) as f:
+            for l in f:
+                moves, result = self._parse(l)
+                board = Board()
+                for player,i,j in moves:
+                    processor(player, i, j, result, board)
+                    board.flip(i, j, player)
+
+    def replay(self, processor, times=1):
+        for _ in range(0, times):
+            self._replay_once(processor)
+
 class Game(object):
     def __init__(self, black_player, white_player, verbose=0):
         assert black_player.role == Board.BLACK

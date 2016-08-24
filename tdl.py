@@ -54,8 +54,26 @@ class OthelloModel(object):
     def update_param(self, x, y):
         self.sess.run([self.opt_op], feed_dict={self.x: x, self.y: y})
 
+from othello import Board
 from ai import Agent
 import numpy as np
+
+class TDLProcessor(object):
+    def __init__(self, role):
+        self.role = role
+        self.model = OthelloModel()
+        self.model.init_params()
+    def __call__(self, player, i, j, result, board):
+        if player == self.role:
+            with board.flip2(i,j,player):
+                target = 0.0
+                if self.role == Board.BLACK and result > 0:
+                    target = 1.0
+                if self.role == Board.WHITE and result < 0:
+                    target = 1.0
+                self.model.update_param(board.board2, [[target]])
+    def save_model(self, model_path):
+        self.model.save_params(model_path)
 
 class TDLAgent(Agent):
     def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None):
