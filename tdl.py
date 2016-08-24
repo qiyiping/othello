@@ -8,9 +8,9 @@ class OthelloModel(object):
         self.x = tf.placeholder(tf.float32, shape=[8,8], name="board")
         self.y = tf.placeholder(tf.float32, shape=[1,1], name="y")
 
-        w1 = tf.Variable(tf.truncated_normal([8,8], stddev=0.2), name="weight1")
+        w1 = tf.Variable(tf.truncated_normal([8,8], mean=1.0, stddev=0.2), name="weight1")
         b1 = tf.Variable(tf.zeros([1,1]), name="bias1")
-        w2 = tf.Variable(tf.truncated_normal([4,1], stddev=0.2), name="weight2")
+        w2 = tf.Variable(tf.truncated_normal([4,1], mean=1.0, stddev=0.2), name="weight2")
         b2 = tf.Variable(tf.zeros([1,1]), name="bias2")
         self.params = [w1, b1, w2, b2]
 
