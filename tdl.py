@@ -31,7 +31,7 @@ class OthelloModel(object):
         cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.logits, self.y))
 
         # optimizer
-        optimizer = tf.train.AdagradOptimizer(learning_rate=0.01)
+        optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
         # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
         self.opt_op = optimizer.minimize(cost)
 
@@ -79,10 +79,9 @@ class TDLAgent(Agent):
     def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None):
         super(TDLAgent, self).__init__(role)
         self._model = OthelloModel()
+        self._model.init_params()
         if model_file is not None:
             self._model.restore_params(model_file)
-        else:
-            self._model.init_params()
         self._alpha = alpha
         self._update = update
         self._epsilon = epsilon

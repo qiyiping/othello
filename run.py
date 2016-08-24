@@ -44,7 +44,7 @@ def self_play():
     evaluator = SimpleEvaluator(Board.BLACK)
     bot = SimpleBot(evaluator, 3, Board.BLACK)
     # human = CmdLineHumanPlayer(Board.WHITE)
-    tdl_agent = TDLAgent(role=Board.WHITE, update=True, alpha=1.0, epsilon=0.3)
+    tdl_agent = TDLAgent(role=Board.WHITE, update=True, alpha=1.0, epsilon=0.01, model_file="./model/logbook.ckpt")
     game = Game(bot, tdl_agent, 1)
     for i in range(1, 10001):
         game.run()
@@ -62,4 +62,5 @@ def replay():
     processor.save_model("./model/logbook.ckpt")
 
 if __name__ == '__main__':
-    replay()
+    # replay()
+    self_play()
