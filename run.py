@@ -37,30 +37,46 @@ class SimpleEvaluator(object):
     def __call__(self, board):
         return np.sum(self._w * (board.board == self._role))
 
+def save_model_and_tell(tdl_agent, game, i):
+    ts = int(time.time())
+    tdl_agent.save_model("./model/{0}_{1}.ckpt".format(tdl_agent.role, ts))
+    b,w,t = game.game_stat()
+    print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
 
-import sys
-
-def self_play():
+def self_play(update, alpha, epsilon, model_file, games, verbose):
     evaluator = SimpleEvaluator(Board.BLACK)
     bot = SimpleBot(evaluator, 3, Board.BLACK)
-    # human = CmdLineHumanPlayer(Board.WHITE)
-    tdl_agent = TDLAgent(role=Board.WHITE, update=True, alpha=1.0, epsilon=0.01, model_file="./model/logbook.ckpt")
-    game = Game(bot, tdl_agent, 1)
-    for i in range(1, 10001):
+    human = CmdLineHumanPlayer(Board.BLACK)
+    tdl_agent = TDLAgent(role=Board.WHITE, update=update, alpha=alpha, epsilon=epsilon, model_file=model_file)
+    game = Game(human, tdl_agent, verbose)
+    for i in range(0, games):
         game.run()
-        if i % 100 == 0:
-            ts = int(time.time())
-            tdl_agent.save_model("./model/{0}_{1}_{2}.ckpt".format(tdl_agent.role, i, ts))
-            b,w,t = game.game_stat()
-            print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
+        if i % 100 == 0 and i > 0:
+            save_model_and_tell(tdl_agent, game, i)
+    save_model_and_tell(tdl_agent, game, i)
 
+def replay(times, game_book, checkpoint):
+    r = Replay(game_book)
+    processor = TDLProcessor(Board.WHITE, checkpoint)
+    r.replay(processor, times)
 
-def replay():
-    r = Replay("./database/skatgame/logbook.gam.gz")
-    processor = TDLProcessor(Board.WHITE)
-    r.replay(processor)
-    processor.save_model("./model/logbook.ckpt")
-
+import argparse
 if __name__ == '__main__':
-    # replay()
-    self_play()
+    parser = argparse.ArgumentParser(prog="run.py")
+    parser.add_argument("--replay", default=False, action="store_true")
+    parser.add_argument("--times", default=1, type=int)
+    parser.add_argument("--book", default="./database/skatgame/logbook.gam.gz")
+    parser.add_argument("--checkpoint", default="./model/logbook.ckpt")
+    parser.add_argument("--play", default=False, action="store_true")
+    parser.add_argument("--verbose", default=1, type=int)
+    parser.add_argument("--update", action="store_true")
+    parser.add_argument("--alpha", default=1.0, type=float)
+    parser.add_argument("--epsilon", default=0.01, type=float)
+    parser.add_argument("--model", default="./model/logbook.ckpt")
+    parser.add_argument("--games", default=10000, type=int)
+    args = parser.parse_args()
+    print args
+    if args.play:
+        self_play(args.update, args.alpha, args.epsilon, args.model, args.games, args.verbose)
+    if args.replay:
+        replay(args.times, args.book, args.checkpoint)

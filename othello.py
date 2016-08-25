@@ -87,7 +87,10 @@ class Board(object):
 
     @property
     def board2(self):
-        return self._board * 2.0 - 3.0
+        b = self._board.copy()
+        b[b==Board.BLACK] = -1.0
+        b[b==Board.WHITE] = 1.0
+        return b.reshape(1, 64)
 
     @property
     def size(self):
@@ -165,6 +168,8 @@ class Replay(object):
                 for player,i,j in moves:
                     processor(player, i, j, result, board)
                     board.flip(i, j, player)
+                processor.after_one_game()
+            processor.after_one_replay()
 
     def replay(self, processor, times=1):
         for _ in range(0, times):

@@ -5,13 +5,13 @@ import tensorflow as tf
 
 class OthelloModel(object):
     def __init__(self):
-        self.x = tf.placeholder(tf.float32, shape=[8,8], name="board")
-        self.y = tf.placeholder(tf.float32, shape=[1,1], name="y")
+        self.x = tf.placeholder(tf.float32, shape=[None,64], name="board")
+        self.y = tf.placeholder(tf.float32, shape=[None,1], name="y")
 
-        w1 = tf.Variable(tf.truncated_normal([8,8], mean=1.0, stddev=0.2), name="weight1")
-        b1 = tf.Variable(tf.zeros([1,1]), name="bias1")
-        w2 = tf.Variable(tf.truncated_normal([4,1], mean=1.0, stddev=0.2), name="weight2")
-        b2 = tf.Variable(tf.zeros([1,1]), name="bias2")
+        w1 = tf.Variable(tf.truncated_normal([8,8], mean=0.0, stddev=0.2), name="weight1")
+        b1 = tf.Variable(tf.zeros(1), name="bias1")
+        w2 = tf.Variable(tf.truncated_normal([4,1], mean=0.0, stddev=0.2), name="weight2")
+        b2 = tf.Variable(tf.zeros(1), name="bias2")
         self.params = [w1, b1, w2, b2]
 
         # model
@@ -21,8 +21,7 @@ class OthelloModel(object):
         w13 = tf.reshape(reversed_w1, (64,1))
         w14 = tf.reshape(tf.transpose(reversed_w1), (64,1))
         w = tf.concat(1, [w11,w12,w13,w14])
-        b = tf.concat(1, [b1,b1,b1,b1])
-        h = tf.nn.relu(tf.matmul(tf.reshape(self.x, (1,64)), w) + b)
+        h = tf.nn.relu(tf.matmul(self.x, w) + b1)
 
         self.logits = tf.matmul(h, w2) + b2
         self.prediction = tf.nn.sigmoid(self.logits)
@@ -31,7 +30,7 @@ class OthelloModel(object):
         cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.logits, self.y))
 
         # optimizer
-        optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
+        optimizer = tf.train.AdagradOptimizer(learning_rate=0.2)
         # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
         self.opt_op = optimizer.minimize(cost)
 
@@ -41,6 +40,13 @@ class OthelloModel(object):
 
     def init_params(self):
         self.sess.run(self.init_op)
+
+    @property
+    def parameters(self):
+        return self.params
+    @property
+    def session(self):
+        return self.sess
 
     def save_params(self, file_path):
         self.saver.save(self.sess, file_path)
@@ -59,10 +65,16 @@ from ai import Agent
 import numpy as np
 
 class TDLProcessor(object):
-    def __init__(self, role):
+    def __init__(self, role, model_path, batch_size=50):
         self.role = role
         self.model = OthelloModel()
         self.model.init_params()
+        self.model_path = model_path
+        self.batch_size = batch_size
+        self.game_processed = 0
+        self.x = []
+        self.y = []
+
     def __call__(self, player, i, j, result, board):
         if player == self.role:
             with board.flip2(i,j,player):
@@ -71,8 +83,26 @@ class TDLProcessor(object):
                     target = 1.0
                 if self.role == Board.WHITE and result < 0:
                     target = 1.0
-                self.model.update_param(board.board2, [[target]])
-    def save_model(self, model_path):
+                self.x.append(board.board2)
+                self.y.append(target)
+            if len(self.x) >= self.batch_size:
+                xx = np.vstack(self.x)
+                yy = np.vstack(self.y)
+                self.model.update_param(xx, yy)
+                self.x = []
+                self.y = []
+
+    def after_one_game(self):
+        self.game_processed += 1
+        if self.game_processed % 10000 == 0:
+            print "# game processed: ", self.game_processed
+
+    def after_one_replay(self):
+        self.save_model()
+
+    def save_model(self, model_path=None):
+        if model_path is None:
+            model_path = self.model_path
         self.model.save_params(model_path)
 
 class TDLAgent(Agent):
