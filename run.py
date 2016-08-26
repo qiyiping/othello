@@ -40,7 +40,7 @@ class SimpleEvaluator(object):
 def save_model(player):
     if type(player) is TDLAgent:
         ts = int(time.time())
-        player.save_model("./model/{0}_{1}.ckpt".format(tdl_agent.role, ts))
+        player.save_model("./model/{0}_{1}.ckpt".format(player.role, ts))
 
 def tell_game_stat(game, i):
     b,w,t = game.game_stat()
