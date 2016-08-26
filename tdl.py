@@ -61,7 +61,7 @@ class OthelloModel(object):
         self.sess.run([self.opt_op], feed_dict={self.x: x, self.y: y})
 
 from othello import Board
-from ai import Agent
+from ai import Agent, ScoreEvaluator, AlphaBeta
 import numpy as np
 
 class TDLProcessor(object):
