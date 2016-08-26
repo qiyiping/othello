@@ -126,7 +126,8 @@ class TDLAgent(Agent):
         return pos[idx], val[idx]
 
     def save_model(self, model_path):
-        self._model.save_params(model_path)
+        if self._update:
+            self._model.save_params(model_path)
 
     def _is_first_step(self, board):
         return board.blanks >= 59
