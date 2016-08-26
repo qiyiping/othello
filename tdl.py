@@ -145,7 +145,7 @@ class TDLAgent(Agent):
             self._prev_state = None
 
         if board.blanks <= self._depth:
-            s, p = self._searcher.search(board, role)
+            s, p = self._searcher.search(board, self.role)
             if s >=32:
                 v = 1.0
             else:
