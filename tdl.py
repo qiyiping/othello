@@ -106,7 +106,7 @@ class TDLProcessor(object):
         self.model.save_params(model_path)
 
 class TDLAgent(Agent):
-    def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None):
+    def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None, depth=3):
         super(TDLAgent, self).__init__(role)
         self._model = OthelloModel()
         self._model.init_params()
@@ -116,6 +116,9 @@ class TDLAgent(Agent):
         self._update = update
         self._epsilon = epsilon
         self._prev_state = None
+        self._depth = depth
+        score_evaluator = ScoreEvaluator(role)
+        self._searcher = AlphaBeta(score_evaluator, depth)
 
     def _epsilon_greedy(self, pos, val):
         r = np.random.rand()
@@ -140,19 +143,27 @@ class TDLAgent(Agent):
     def play(self, board):
         if self._is_first_step(board):
             self._prev_state = None
-        pos = board.feasible_pos(self.role)
-        next_vals = []
-        for i,j in pos:
-            with board.flip2(i, j, self.role):
-                if board.is_terminal_state():
-                    if board.wins(self.role):
-                        next_vals.append(1.0)
-                    else:
-                        next_vals.append(0.0)
-                else:
-                    next_vals.append(self._model.predict(board.board2)[0][0])
 
-        p,v = self._epsilon_greedy(pos, next_vals)
+        if board.blanks <= self._depth:
+            s, p = self._searcher.search(board, role)
+            if s >=32:
+                v = 1.0
+            else:
+                v = 0.0
+        else:
+            pos = board.feasible_pos(self.role)
+            next_vals = []
+            for i,j in pos:
+                with board.flip2(i, j, self.role):
+                    if board.is_terminal_state():
+                        if board.wins(self.role):
+                            next_vals.append(1.0)
+                        else:
+                            next_vals.append(0.0)
+                    else:
+                        next_vals.append(self._model.predict(board.board2)[0][0])
+            p,v = self._epsilon_greedy(pos, next_vals)
+
         if self._update:
             if  self._prev_state is not None:
                 self._update_param(v)
