@@ -93,6 +93,13 @@ class Board(object):
         return b.reshape(1, 64)
 
     @property
+    def board3(self):
+        b = self._board.copy()
+        b[b==Board.BLACK] = -1.0
+        b[b==Board.WHITE] = 1.0
+        return b
+
+    @property
     def size(self):
         return self._size
 
