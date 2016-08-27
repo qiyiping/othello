@@ -7,7 +7,7 @@ import traceback
 class Board(object):
     BLANK = 0
     BLACK = 1
-    WHITE = 2
+    WHITE = -1
     DIRECTIONS = [(1, 0), (-1, 0),
                   (0, 1), (0, -1),
                   (1, 1), (-1, -1),
@@ -34,7 +34,7 @@ class Board(object):
         sz = self.size
         for i in range(0, sz):
             for j in range(0, sz):
-                if self._is_feasible(i, j, player):
+                if self.is_feasible(i, j, player):
                     pos.append((i, j))
         return pos
 
@@ -87,24 +87,14 @@ class Board(object):
 
     @property
     def board2(self):
-        b = self._board.copy()
-        b[b==Board.BLACK] = -1.0
-        b[b==Board.WHITE] = 1.0
-        return b.reshape(1, 64)
-
-    @property
-    def board3(self):
-        b = self._board.copy()
-        b[b==Board.BLACK] = -1.0
-        b[b==Board.WHITE] = 1.0
-        return b
+        return self._board.reshape(1, 64)
 
     @property
     def size(self):
         return self._size
 
 
-    def _is_feasible(self, i, j, player):
+    def is_feasible(self, i, j, player):
         if self._board[i][j] != Board.BLANK:
             return False
         cnt = 0
@@ -146,37 +136,19 @@ class Board(object):
                                                             self.score(Board.WHITE)))
         sys.stdout.flush()
 
-
 import gzip
 class Replay(object):
-    def __init__(self, database_file):
-        self._database_file = database_file
-
-    def _parse(self, l):
-        moves = []
-        tokens = l.strip().split(':')
-        steps = len(tokens[0])/3
-        for idx in range(0, steps):
-            if l[3*idx] == '+':
-                player = Board.BLACK
-            else:
-                player = Board.WHITE
-            i = ord(l[3*idx+1]) - ord('a')
-            j = int(l[3*idx+2]) - 1
-            moves.append((player, i, j))
-        result = int(tokens[1].strip().split(' ')[0])
-        return (moves, result)
+    def __init__(self, database):
+        self._database = database
 
     def _replay_once(self, processor):
-        with gzip.open(self._database_file) as f:
-            for l in f:
-                moves, result = self._parse(l)
-                board = Board()
-                for player,i,j in moves:
-                    processor(player, i, j, result, board)
-                    board.flip(i, j, player)
-                processor.after_one_game()
-            processor.after_one_replay()
+        for moves, result in self._database.games():
+            board = Board()
+            for player,i,j in moves:
+                processor(player, i, j, result, board)
+                board.flip(i, j, player)
+            processor.after_one_game()
+        processor.after_one_replay()
 
     def replay(self, processor, times=1):
         for _ in range(0, times):
