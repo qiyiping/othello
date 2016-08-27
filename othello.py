@@ -136,13 +136,12 @@ class Board(object):
                                                             self.score(Board.WHITE)))
         sys.stdout.flush()
 
-import gzip
 class Replay(object):
     def __init__(self, database):
         self._database = database
 
-    def _replay_once(self, processor):
-        for moves, result in self._database.games():
+    def _replay_once(self, processor, d1, d2):
+        for moves, result in self._database.xgames(d1, d2):
             board = Board()
             for player,i,j in moves:
                 processor(player, i, j, result, board)
@@ -152,7 +151,10 @@ class Replay(object):
 
     def replay(self, processor, times=1):
         for _ in range(0, times):
-            self._replay_once(processor)
+            self._replay_once(processor, False, False)
+            self._replay_once(processor, True, False)
+            self._replay_once(processor, False, True)
+            self._replay_once(processor, True, True)
 
 class Game(object):
     def __init__(self, black_player, white_player, verbose=0):

@@ -13,6 +13,18 @@ def _move_to_str(move):
         p = '-'
     return '{0}{1}{2}'.format(p,chr(ord('a') + column), row+1)
 
+def _mirror1(r, c):
+    return c,r
+
+def _mirror2(r, c, sz=8):
+    return sz-1-c, sz-1-r
+
+def mirror(r, c, d1, d2, sz=8):
+    if d1:
+        r,c = _mirror1(r,c)
+    if d2:
+        r,c = _mirror2(r,c,sz)
+    return r,c
 
 def save_db_as_text(db, output_file):
     with open(output_file, 'w') as f:
@@ -25,14 +37,18 @@ def _byte_to_int(b):
 class ThorDb(object):
     """WTHOR database format: http://cassio.free.fr/cassio/custom_install/database/FORMAT_WTHOR.TXT
     """
-    def __init__(self, database_file=None):
-        self.games = []
+    def __init__(self, *database_files):
+        self._games = []
         self.inconsistencies = 0
-        if database_file is not None:
+        for database_file in database_files:
             self.add_file(database_file)
 
+    @property
+    def games(self):
+        return self._games
+
     def add_file(self, file_name):
-        self.games.extend(self._read_thor_file(file_name))
+        self._games.extend(self._read_thor_file(file_name))
         print "inconsistencies = ", self.inconsistencies
 
     def _read_thor_file(self, file_name):
@@ -73,13 +89,26 @@ class ThorDb(object):
 
 class TextDb(object):
     def __init__(self, *db_files):
-        self.games = []
+        self._games = []
         for db_file in db_files:
             self.add_file(db_file)
 
+    @property
+    def games(self):
+        return self._games
+
+    def _mirror_move(self, m, d1, d2):
+        r,c = mirror(m[1], m[2], d1, d2)
+        return m[0],r,c
+
+    def xgames(self, d1, d2):
+        for moves,result in self._games:
+            moves2 = map(lambda m: self._mirror_move(m,d1,d2), moves)
+            yield moves2,result
+
     def add_file(self, file_name):
-        self.games.extend(self._read_text_file(file_name))
-        print "#games = ", len(self.games)
+        self._games.extend(self._read_text_file(file_name))
+        print "#games = ", len(self._games)
 
     def _read_text_file(self, file_name):
         games = []
@@ -111,7 +140,7 @@ class TextDb(object):
 
 def validate(db):
     import random
-    for moves, result in db.games:
+    for moves, result in db.xgames(True, False):
         if random.random() < 0.9:
             continue
         b = Board()
@@ -126,6 +155,7 @@ def validate(db):
         assert result in (black_score-white_score, 2*score - 64)
 
 if __name__ == '__main__':
-    database_files = ["./database/logbook.txt", "./database/WTH.txt"]
+    # database_files = ["./database/logbook.txt", "./database/WTH.txt"]
+    database_files = ["./database/logbook.txt"]
     db = TextDb(*database_files)
     validate(db)

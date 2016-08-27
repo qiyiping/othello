@@ -7,6 +7,7 @@ from othello import Board, Game, Replay
 from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta
 from tdl import TDLAgent, TDLProcessor
 import time
+from database import TextDb
 
 class SimpleEvaluator(object):
     def __init__(self, role):
@@ -77,8 +78,9 @@ def self_play(update, alpha, epsilon, model_file, games, verbose, black_type, wh
     save_model(black_player)
     tell_game_stat(game, i)
 
-def replay(times, game_book, checkpoint):
-    r = Replay(game_book)
+def replay(times, checkpoint, *game_books):
+    db = TextDb(*game_books)
+    r = Replay(db)
     processor = TDLProcessor(Board.WHITE, checkpoint)
     r.replay(processor, times)
 
@@ -87,7 +89,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="run.py", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--replay", default=False, action="store_true", help="replay log book")
     parser.add_argument("--times", default=1, type=int, help="times to replay the log book")
-    parser.add_argument("--book", default="./database/skatgame/logbook.gam.gz", help="log book")
+    parser.add_argument("--book", default="./database/WTH.txt", help="log book", nargs="+")
     parser.add_argument("--checkpoint", default="./model/logbook.ckpt", help="checkpoint file")
     parser.add_argument("--play", default=False, action="store_true", help="play games")
     player_candidates = ["SimpleBot", "TDLAgent", "HumanCmdLine"]
@@ -104,4 +106,4 @@ if __name__ == '__main__':
     if args.play:
         self_play(args.update, args.alpha, args.epsilon, args.model, args.games, args.verbose, args.black, args.white)
     if args.replay:
-        replay(args.times, args.book, args.checkpoint)
+        replay(args.times, args.checkpoint, *args.book)
