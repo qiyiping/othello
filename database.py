@@ -72,13 +72,14 @@ class ThorDb(object):
         return games
 
 class TextDb(object):
-    def __init__(self, database_file):
+    def __init__(self, *db_files):
         self.games = []
-        if database_file is not None:
-            self.add_file(database_file)
+        for db_file in db_files:
+            self.add_file(db_file)
 
     def add_file(self, file_name):
         self.games.extend(self._read_text_file(file_name))
+        print "#games = ", len(self.games)
 
     def _read_text_file(self, file_name):
         games = []
@@ -109,9 +110,22 @@ class TextDb(object):
 
 
 def validate(db):
-    pass
+    import random
+    for moves, result in db.games:
+        if random.random() < 0.9:
+            continue
+        b = Board()
+        for p,r,c in moves:
+            assert b.is_feasible(r,c,p)
+            b.flip(r,c,p)
+        black_score = b.score(Board.BLACK)
+        white_score = b.score(Board.WHITE)
+        score = black_score
+        if b.score(Board.BLACK) > b.score(Board.WHITE):
+            score = b.score(Board.BLANK) + black_score
+        assert result in (black_score-white_score, 2*score - 64)
 
 if __name__ == '__main__':
-    db = TextDb()
-    db.add_file("./database/logbook.txt")
-    db.add_file("./database/WTH.txt")
+    database_files = ["./database/logbook.txt", "./database/WTH.txt"]
+    db = TextDb(*database_files)
+    validate(db)
