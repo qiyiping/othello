@@ -5,60 +5,79 @@ import tensorflow as tf
 
 class OthelloModel(object):
     def __init__(self):
-        self.x = tf.placeholder(tf.float32, shape=[None,64], name="board")
+        self.x = tf.placeholder(tf.float32, shape=[None,8,8], name="board")
         self.y = tf.placeholder(tf.float32, shape=[None,1], name="y")
 
-        w1 = tf.Variable(tf.truncated_normal([8,8], mean=0.0, stddev=0.2), name="weight1")
-        b1 = tf.Variable(tf.zeros(1), name="bias1")
-        w2 = tf.Variable(tf.truncated_normal([4,1], mean=0.0, stddev=0.2), name="weight2")
-        b2 = tf.Variable(tf.zeros(1), name="bias2")
-        self.params = [w1, b1, w2, b2]
+        self._params = []
 
         # model
-        w11 = tf.reshape(w1, (64,1))
-        w12 = tf.reshape(tf.transpose(w1), (64,1))
-        reversed_w1 = tf.reverse(w1, [True, True])
-        w13 = tf.reshape(reversed_w1, (64,1))
-        w14 = tf.reshape(tf.transpose(reversed_w1), (64,1))
-        w = tf.concat(1, [w11,w12,w13,w14])
-        h = tf.nn.relu(tf.matmul(self.x, w) + b1)
+        with tf.name_scope("conv1"):
+            output_channels1 = 32
+            kernel = tf.Variable(tf.truncated_normal([3,3,1,output_channels1], stddev=0.1))
+            bias = tf.Variable(tf.zeros([32]))
+            x = tf.reshape(self.x, [-1,8,8,1])
+            h = tf.nn.relu(tf.nn.conv2d(x, kernel, strides=[1,1,1,1], padding="SAME") + bias)
+            p1 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+            self._params.extend([kernel, bias])
+        with tf.name_scope("conv2"):
+            output_channels2 = 64
+            kernel = tf.Variable(tf.truncated_normal([3,3,output_channels1,output_channels2], stddev=0.1))
+            bias = tf.Variable(tf.zeros([64]))
+            h = tf.nn.relu(tf.nn.conv2d(p1, kernel, strides=[1,1,1,1], padding="SAME")+ bias)
+            p2 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+            self._params.extend([kernel, bias])
+        with tf.name_scope("full_connect1"):
+            full1_size = 8
+            conv2_size = 8 // 4 * 8 // 4 * output_channels2
+            x = tf.reshape(p2, [-1, conv2_size])
+            f1_weights = tf.Variable(tf.truncated_normal([conv2_size, full1_size], stddev=0.1))
+            f1_bias = tf.Variable(tf.truncated_normal([full1_size], stddev=0.1))
+            f1 = tf.nn.relu(tf.matmul(x,f1_weights) + f1_bias)
+            self._params.extend([f1_weights, f1_bias])
+        with tf.name_scope("full_connect2"):
+            f2_weights = tf.Variable(tf.truncated_normal([full1_size, 1], stddev=0.1))
+            f2_bias = tf.Variable(tf.truncated_normal([1], stddev=0.1))
+            logits = tf.matmul(f1,f2_weights) + f2_bias
+            self._params.extend([f2_weights, f2_bias])
 
-        self.logits = tf.matmul(h, w2) + b2
-        self.prediction = tf.nn.sigmoid(self.logits)
+        # prediction
+        self._prediction = tf.nn.sigmoid(logits)
 
         # cost
-        cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.logits, self.y))
+        regularizers = (tf.nn.l2_loss(f1_weights) + tf.nn.l2_loss(f1_bias) +
+                  tf.nn.l2_loss(f2_weights) + tf.nn.l2_loss(f2_bias))
+        self._cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) + 5e-4 * regularizers
 
         # optimizer
-        optimizer = tf.train.AdagradOptimizer(learning_rate=0.2)
-        # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
-        self.opt_op = optimizer.minimize(cost)
+        optimizer = tf.train.AdagradOptimizer(learning_rate=0.05)
+        self._train_step = optimizer.minimize(self._cost)
 
-        self.init_op = tf.initialize_all_variables()
-        self.sess = tf.Session()
-        self.saver = tf.train.Saver(self.params)
+        # init params
+        init_op = tf.initialize_all_variables()
+        self._sess = tf.Session()
+        self._sess.run(init_op)
 
-    def init_params(self):
-        self.sess.run(self.init_op)
+        # saver
+        self._saver = tf.train.Saver(self._params)
 
     @property
     def parameters(self):
-        return self.params
+        return self._params
     @property
     def session(self):
-        return self.sess
+        return self._sess
 
     def save_params(self, file_path):
-        self.saver.save(self.sess, file_path)
+        self._saver.save(self._sess, file_path)
 
     def restore_params(self, file_path):
-        self.saver.restore(self.sess, file_path)
+        self._saver.restore(self._sess, file_path)
 
     def predict(self, x):
-        return self.sess.run(self.prediction, feed_dict={self.x: x})
+        return self._sess.run(self._prediction, feed_dict={self.x: x})
 
     def update_param(self, x, y):
-        self.sess.run([self.opt_op], feed_dict={self.x: x, self.y: y})
+        self._sess.run([self._train_step], feed_dict={self.x: x, self.y: y})
 
 from othello import Board
 from ai import Agent, ScoreEvaluator, AlphaBeta
@@ -68,7 +87,6 @@ class TDLProcessor(object):
     def __init__(self, role, model_path, batch_size=50):
         self.role = role
         self.model = OthelloModel()
-        self.model.init_params()
         self.model_path = model_path
         self.batch_size = batch_size
         self.game_processed = 0
@@ -83,11 +101,11 @@ class TDLProcessor(object):
                     target = 1.0
                 if self.role == Board.WHITE and result < 0:
                     target = 1.0
-                self.x.append(board.board2)
-                self.y.append(target)
+                self.x.append(board.board.copy())
+                self.y.append([target])
             if len(self.x) >= self.batch_size:
-                xx = np.vstack(self.x)
-                yy = np.vstack(self.y)
+                xx = np.stack(self.x)
+                yy = np.stack(self.y)
                 self.model.update_param(xx, yy)
                 self.x = []
                 self.y = []
@@ -109,7 +127,6 @@ class TDLAgent(Agent):
     def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None, depth=3):
         super(TDLAgent, self).__init__(role)
         self._model = OthelloModel()
-        self._model.init_params()
         if model_file is not None:
             self._model.restore_params(model_file)
         self._alpha = alpha
@@ -161,14 +178,14 @@ class TDLAgent(Agent):
                         else:
                             next_vals.append(0.0)
                     else:
-                        next_vals.append(self._model.predict(board.board2)[0][0])
+                        next_vals.append(self._model.predict(board.board)[0][0])
             p,v = self._epsilon_greedy(pos, next_vals)
 
         if self._update:
             if  self._prev_state is not None:
                 self._update_param(v)
             with board.flip2(p[0], p[1], self.role):
-                self._prev_state = board.board2.copy()
+                self._prev_state = board.board.copy()
 
         return p
 
