@@ -95,7 +95,7 @@ class TDLProcessor(object):
         self.x = {}
         self.y = {}
 
-    def _add_sample(board, target):
+    def _add_sample(self, board, target):
         stage = board.stage()
         if stage not in self.x:
             self.x[stage] = []
