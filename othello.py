@@ -85,6 +85,9 @@ class Board(object):
     def board(self):
         return self._board
 
+    def stage(self):
+        return 11 - self.blanks // 5
+
     @property
     def size(self):
         return self._size

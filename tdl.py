@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
-
+from othello import Board
 
 class OthelloModel(object):
     def __init__(self):
@@ -9,48 +9,51 @@ class OthelloModel(object):
         self.y = tf.placeholder(tf.float32, shape=[None,1], name="y")
 
         self._params = []
+        self._prediction = []
+        self._train_step = []
 
-        # model
-        with tf.name_scope("conv1"):
-            output_channels1 = 32
-            kernel = tf.Variable(tf.truncated_normal([3,3,1,output_channels1], stddev=0.1))
-            bias = tf.Variable(tf.zeros([32]))
-            x = tf.reshape(self.x, [-1,8,8,1])
-            h = tf.nn.relu(tf.nn.conv2d(x, kernel, strides=[1,1,1,1], padding="SAME") + bias)
-            p1 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
-            self._params.extend([kernel, bias])
-        with tf.name_scope("conv2"):
-            output_channels2 = 64
-            kernel = tf.Variable(tf.truncated_normal([3,3,output_channels1,output_channels2], stddev=0.1))
-            bias = tf.Variable(tf.zeros([64]))
-            h = tf.nn.relu(tf.nn.conv2d(p1, kernel, strides=[1,1,1,1], padding="SAME")+ bias)
-            p2 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
-            self._params.extend([kernel, bias])
-        with tf.name_scope("full_connect1"):
-            full1_size = 8
-            conv2_size = 8 // 4 * 8 // 4 * output_channels2
-            x = tf.reshape(p2, [-1, conv2_size])
-            f1_weights = tf.Variable(tf.truncated_normal([conv2_size, full1_size], stddev=0.1))
-            f1_bias = tf.Variable(tf.truncated_normal([full1_size], stddev=0.1))
-            f1 = tf.nn.relu(tf.matmul(x,f1_weights) + f1_bias)
-            self._params.extend([f1_weights, f1_bias])
-        with tf.name_scope("full_connect2"):
-            f2_weights = tf.Variable(tf.truncated_normal([full1_size, 1], stddev=0.1))
-            f2_bias = tf.Variable(tf.truncated_normal([1], stddev=0.1))
-            logits = tf.matmul(f1,f2_weights) + f2_bias
-            self._params.extend([f2_weights, f2_bias])
+        for i in range(0, 12):
+            # model
+            with tf.name_scope("conv1"):
+                output_channels1 = 32
+                kernel = tf.Variable(tf.truncated_normal([3,3,1,output_channels1], stddev=0.1))
+                bias = tf.Variable(tf.zeros([32]))
+                x = tf.reshape(self.x, [-1,8,8,1])
+                h = tf.nn.relu(tf.nn.conv2d(x, kernel, strides=[1,1,1,1], padding="SAME") + bias)
+                p1 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+                self._params.extend([kernel, bias])
+            with tf.name_scope("conv2"):
+                output_channels2 = 64
+                kernel = tf.Variable(tf.truncated_normal([3,3,output_channels1,output_channels2], stddev=0.1))
+                bias = tf.Variable(tf.zeros([64]))
+                h = tf.nn.relu(tf.nn.conv2d(p1, kernel, strides=[1,1,1,1], padding="SAME")+ bias)
+                p2 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+                self._params.extend([kernel, bias])
+            with tf.name_scope("full_connect1"):
+                full1_size = 8
+                conv2_size = 8 // 4 * 8 // 4 * output_channels2
+                x = tf.reshape(p2, [-1, conv2_size])
+                f1_weights = tf.Variable(tf.truncated_normal([conv2_size, full1_size], stddev=0.1))
+                f1_bias = tf.Variable(tf.truncated_normal([full1_size], stddev=0.1))
+                f1 = tf.nn.relu(tf.matmul(x,f1_weights) + f1_bias)
+                self._params.extend([f1_weights, f1_bias])
+            with tf.name_scope("full_connect2"):
+                f2_weights = tf.Variable(tf.truncated_normal([full1_size, 1], stddev=0.1))
+                f2_bias = tf.Variable(tf.truncated_normal([1], stddev=0.1))
+                logits = tf.matmul(f1,f2_weights) + f2_bias
+                self._params.extend([f2_weights, f2_bias])
 
-        # prediction
-        self._prediction = tf.nn.sigmoid(logits)
+            # prediction
+            self._prediction.append(tf.nn.sigmoid(logits))
 
-        # cost
-        regularizers = (tf.nn.l2_loss(f1_weights) + tf.nn.l2_loss(f1_bias) +
-                  tf.nn.l2_loss(f2_weights) + tf.nn.l2_loss(f2_bias))
-        self._cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) + 5e-4 * regularizers
+            # cost
+            regularizers = (tf.nn.l2_loss(f1_weights) + tf.nn.l2_loss(f1_bias) +
+                      tf.nn.l2_loss(f2_weights) + tf.nn.l2_loss(f2_bias))
+            cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) + 5e-4 * regularizers
 
-        # optimizer
-        optimizer = tf.train.AdagradOptimizer(learning_rate=0.05)
-        self._train_step = optimizer.minimize(self._cost)
+            # optimizer
+            optimizer = tf.train.AdagradOptimizer(learning_rate=0.05)
+            self._train_step.append(optimizer.minimize(cost))
 
         # init params
         init_op = tf.initialize_all_variables()
@@ -73,13 +76,12 @@ class OthelloModel(object):
     def restore_params(self, file_path):
         self._saver.restore(self._sess, file_path)
 
-    def predict(self, x):
-        return self._sess.run(self._prediction, feed_dict={self.x: x})
+    def predict(self, x, stage):
+        return self._sess.run(self._prediction[stage], feed_dict={self.x: x})
 
-    def update_param(self, x, y):
-        self._sess.run([self._train_step], feed_dict={self.x: x, self.y: y})
+    def update_param(self, x, y, stage):
+        self._sess.run(self._train_step[stage], feed_dict={self.x: x, self.y: y})
 
-from othello import Board
 from ai import Agent, ScoreEvaluator, AlphaBeta
 import numpy as np
 
@@ -90,8 +92,17 @@ class TDLProcessor(object):
         self.model_path = model_path
         self.batch_size = batch_size
         self.game_processed = 0
-        self.x = []
-        self.y = []
+        self.x = {}
+        self.y = {}
+
+    def _add_sample(board, target):
+        stage = board.stage()
+        if stage not in self.x:
+            self.x[stage] = []
+        if stage not in self.y:
+            self.y[stage] =[]
+        self.x[stage].append(board.board.copy())
+        self.y[stage].append([target])
 
     def __call__(self, player, i, j, result, board):
         if player == self.role:
@@ -101,21 +112,26 @@ class TDLProcessor(object):
                     target = 1.0
                 if self.role == Board.WHITE and result < 0:
                     target = 1.0
-                self.x.append(board.board.copy())
-                self.y.append([target])
-            if len(self.x) >= self.batch_size:
-                xx = np.stack(self.x)
-                yy = np.stack(self.y)
-                self.model.update_param(xx, yy)
-                self.x = []
-                self.y = []
+                self._add_sample(board, target)
 
     def after_one_game(self):
         self.game_processed += 1
+        if self.game_processed % self.batch_size == 0:
+            for stage in range(0, 12):
+                if stage in self.x:
+                    self.model.update_param(self.x[stage], self.y[stage], stage)
+                    self.x = {}
+                    self.y = {}
         if self.game_processed % 10000 == 0:
             print "# game processed: ", self.game_processed
 
     def after_one_replay(self):
+        if len(self.x) > 0:
+            for stage in range(0, 12):
+                if stage in self.x:
+                    self.model.update_param(self.x[stage], self.y[stage], stage)
+                    self.x = {}
+                    self.y = {}
         self.save_model()
 
     def save_model(self, model_path=None):
@@ -172,13 +188,14 @@ class TDLAgent(Agent):
             next_vals = []
             for i,j in pos:
                 with board.flip2(i, j, self.role):
+                    stage = board.stage()
                     if board.is_terminal_state():
                         if board.wins(self.role):
                             next_vals.append(1.0)
                         else:
                             next_vals.append(0.0)
                     else:
-                        next_vals.append(self._model.predict([board.board])[0][0])
+                        next_vals.append(self._model.predict([board.board], stage)[0][0])
             p,v = self._epsilon_greedy(pos, next_vals)
 
         if self._update:
