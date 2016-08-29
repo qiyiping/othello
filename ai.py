@@ -110,19 +110,30 @@ class SimpleBot(Agent):
             _, action = self._one_step_searcher.search(board, self.role)
         return action
 
+
+
+from tdl import OthelloModel
+
 class CmdLineHumanPlayer(Agent):
     def __init__(self, role):
         super(CmdLineHumanPlayer, self).__init__(role)
+        self.model = OthelloModel()
+        self.model.restore_params("./model/logbook.ckpt")
 
     def play(self, board):
         pos = board.feasible_pos(self.role)
         p = None
         while True:
             try:
+                scores = []
+                for r,c in pos:
+                    with board.flip2(r, c, self.role):
+                        scores.append(self.model.predict([board.board])[0][0])
+                print ", ".join(["%s:%.03f" % (chr(i+ord("A")), scores[i]) for i in range(0, len(pos))])
                 l = raw_input("Enter your choise: ").strip().lower()
                 if l == "exit":
                     break
-                p = pos[ord(l) - ord("a")]
+                p = pos[ord(l.lower()) - ord("a")]
                 break
             except:
                 pass

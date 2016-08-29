@@ -86,10 +86,6 @@ class Board(object):
         return self._board
 
     @property
-    def board2(self):
-        return self._board.reshape(1, 64)
-
-    @property
     def size(self):
         return self._size
 
@@ -114,6 +110,14 @@ class Board(object):
     def _is_valid_pos(self, i, j):
         return (i < self.size and i >= 0 and j < self.size and j >= 0)
 
+    def _cmd_symbol(self, i, j):
+        if self._board[i][j] == Board.BLANK:
+            return '-'
+        elif self._board[i][j] == Board.BLACK:
+            return "*"
+        else:
+            return "o"
+
     def print_for_player(self, player):
         prt = sys.stdout.write
 
@@ -129,7 +133,7 @@ class Board(object):
                     idx = pos.index((i,j))
                     prt(chr(ord("A") + idx))
                 except:
-                    prt(str(self.board[i][j]))
+                    prt(self._cmd_symbol(i, j))
                 prt(" ")
             prt("\n")
         prt("\nBlack score: {0}, White score: {1}\n".format(self.score(Board.BLACK),

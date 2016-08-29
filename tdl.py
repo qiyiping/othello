@@ -178,7 +178,7 @@ class TDLAgent(Agent):
                         else:
                             next_vals.append(0.0)
                     else:
-                        next_vals.append(self._model.predict(board.board)[0][0])
+                        next_vals.append(self._model.predict([board.board])[0][0])
             p,v = self._epsilon_greedy(pos, next_vals)
 
         if self._update:
