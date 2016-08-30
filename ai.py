@@ -118,7 +118,7 @@ class CmdLineHumanPlayer(Agent):
     def __init__(self, role, help_model_path=None):
         super(CmdLineHumanPlayer, self).__init__(role)
         self._help_model = None
-        if help_model_path is not None
+        if help_model_path is not None:
             self._help_model = OthelloModel()
             self._help_model.restore_params(help_model_path)
 
