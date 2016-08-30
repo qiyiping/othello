@@ -5,63 +5,64 @@ from othello import Board
 
 class OthelloModel(object):
     def __init__(self):
-        self.x = tf.placeholder(tf.float32, shape=[None,8,8], name="board")
-        self.y = tf.placeholder(tf.float32, shape=[None,1], name="y")
+        with tf.Graph().as_default() as self._graph:
+            self.x = tf.placeholder(tf.float32, shape=[None,8,8], name="board")
+            self.y = tf.placeholder(tf.float32, shape=[None,1], name="y")
 
-        self._params = []
-        self._prediction = []
-        self._train_step = []
+            self._params = []
+            self._prediction = []
+            self._train_step = []
 
-        for i in range(0, 12):
-            # model
-            with tf.name_scope("conv1"):
-                output_channels1 = 32
-                kernel = tf.Variable(tf.truncated_normal([3,3,1,output_channels1], stddev=0.1))
-                bias = tf.Variable(tf.zeros([32]))
-                x = tf.reshape(self.x, [-1,8,8,1])
-                h = tf.nn.relu(tf.nn.conv2d(x, kernel, strides=[1,1,1,1], padding="SAME") + bias)
-                p1 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
-                self._params.extend([kernel, bias])
-            with tf.name_scope("conv2"):
-                output_channels2 = 64
-                kernel = tf.Variable(tf.truncated_normal([3,3,output_channels1,output_channels2], stddev=0.1))
-                bias = tf.Variable(tf.zeros([64]))
-                h = tf.nn.relu(tf.nn.conv2d(p1, kernel, strides=[1,1,1,1], padding="SAME")+ bias)
-                p2 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
-                self._params.extend([kernel, bias])
-            with tf.name_scope("full_connect1"):
-                full1_size = 8
-                conv2_size = 8 // 4 * 8 // 4 * output_channels2
-                x = tf.reshape(p2, [-1, conv2_size])
-                f1_weights = tf.Variable(tf.truncated_normal([conv2_size, full1_size], stddev=0.1))
-                f1_bias = tf.Variable(tf.truncated_normal([full1_size], stddev=0.1))
-                f1 = tf.nn.relu(tf.matmul(x,f1_weights) + f1_bias)
-                self._params.extend([f1_weights, f1_bias])
-            with tf.name_scope("full_connect2"):
-                f2_weights = tf.Variable(tf.truncated_normal([full1_size, 1], stddev=0.1))
-                f2_bias = tf.Variable(tf.truncated_normal([1], stddev=0.1))
-                logits = tf.matmul(f1,f2_weights) + f2_bias
-                self._params.extend([f2_weights, f2_bias])
+            for i in range(0, 12):
+                # model
+                with tf.name_scope("conv1"):
+                    output_channels1 = 32
+                    kernel = tf.Variable(tf.truncated_normal([3,3,1,output_channels1], stddev=0.1))
+                    bias = tf.Variable(tf.zeros([32]))
+                    x = tf.reshape(self.x, [-1,8,8,1])
+                    h = tf.nn.relu(tf.nn.conv2d(x, kernel, strides=[1,1,1,1], padding="SAME") + bias)
+                    p1 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+                    self._params.extend([kernel, bias])
+                with tf.name_scope("conv2"):
+                    output_channels2 = 64
+                    kernel = tf.Variable(tf.truncated_normal([3,3,output_channels1,output_channels2], stddev=0.1))
+                    bias = tf.Variable(tf.zeros([64]))
+                    h = tf.nn.relu(tf.nn.conv2d(p1, kernel, strides=[1,1,1,1], padding="SAME")+ bias)
+                    p2 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
+                    self._params.extend([kernel, bias])
+                with tf.name_scope("full_connect1"):
+                    full1_size = 8
+                    conv2_size = 8 // 4 * 8 // 4 * output_channels2
+                    x = tf.reshape(p2, [-1, conv2_size])
+                    f1_weights = tf.Variable(tf.truncated_normal([conv2_size, full1_size], stddev=0.1))
+                    f1_bias = tf.Variable(tf.truncated_normal([full1_size], stddev=0.1))
+                    f1 = tf.nn.relu(tf.matmul(x,f1_weights) + f1_bias)
+                    self._params.extend([f1_weights, f1_bias])
+                with tf.name_scope("full_connect2"):
+                    f2_weights = tf.Variable(tf.truncated_normal([full1_size, 1], stddev=0.1))
+                    f2_bias = tf.Variable(tf.truncated_normal([1], stddev=0.1))
+                    logits = tf.matmul(f1,f2_weights) + f2_bias
+                    self._params.extend([f2_weights, f2_bias])
 
-            # prediction
-            self._prediction.append(tf.nn.sigmoid(logits))
+                # prediction
+                self._prediction.append(tf.nn.sigmoid(logits))
 
-            # cost
-            regularizers = (tf.nn.l2_loss(f1_weights) + tf.nn.l2_loss(f1_bias) +
-                      tf.nn.l2_loss(f2_weights) + tf.nn.l2_loss(f2_bias))
-            cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) # + 5e-4 * regularizers
+                # cost
+                regularizers = (tf.nn.l2_loss(f1_weights) + tf.nn.l2_loss(f1_bias) +
+                          tf.nn.l2_loss(f2_weights) + tf.nn.l2_loss(f2_bias))
+                cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) # + 5e-4 * regularizers
 
-            # optimizer
-            optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
-            self._train_step.append(optimizer.minimize(cost))
+                # optimizer
+                optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
+                self._train_step.append(optimizer.minimize(cost))
 
-        # init params
-        init_op = tf.initialize_all_variables()
-        self._sess = tf.Session()
-        self._sess.run(init_op)
+            # init params
+            init_op = tf.initialize_all_variables()
+            self._sess = tf.Session()
+            self._sess.run(init_op)
 
-        # saver
-        self._saver = tf.train.Saver(self._params)
+            # saver
+            self._saver = tf.train.Saver(self._params)
 
     @property
     def parameters(self):
