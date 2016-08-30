@@ -140,7 +140,7 @@ class TDLProcessor(object):
         self.model.save_params(model_path)
 
 class TDLAgent(Agent):
-    def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None, depth=3):
+    def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None, depth=3, temperature=0.1, explore_method="epsilon"):
         super(TDLAgent, self).__init__(role)
         self._model = OthelloModel()
         if model_file is not None:
@@ -152,6 +152,10 @@ class TDLAgent(Agent):
         self._depth = depth
         score_evaluator = ScoreEvaluator(role)
         self._searcher = AlphaBeta(score_evaluator, depth)
+        self._temperature = temperature
+        if explore_method not in ["epsilon", "softmax"]:
+            raise Exception("`explore_method' should be 'epsilon' or 'softmax'.")
+        self._explore_method = explore_method
 
     def _epsilon_greedy(self, pos, val):
         r = np.random.rand()
@@ -159,6 +163,19 @@ class TDLAgent(Agent):
             idx = np.argmax(val)
         else:
             idx = np.random.randint(low=0, high=len(pos))
+        return pos[idx], val[idx]
+
+    def _softmax_weighted(self, pos, val):
+        x = np.exp(np.array(val)/self._temperature)
+        s = np.sum(x)
+        r = np.random.rand()
+        a = 0.0
+        idx = -1
+        for i, e in enumerate(x):
+            a += (e/s)
+            if a >= r:
+                idx = i
+                break
         return pos[idx], val[idx]
 
     def save_model(self, model_path):
@@ -197,7 +214,10 @@ class TDLAgent(Agent):
                             next_vals.append(0.0)
                     else:
                         next_vals.append(self._model.predict([board.board], stage)[0][0])
-            p,v = self._epsilon_greedy(pos, next_vals)
+            if self._explore_method == "epsilon":
+                p,v = self._epsilon_greedy(pos, next_vals)
+            elif self._explore_method == "softmax":
+                p,v = self._softmax_weighted(pos, next_vals)
 
         if self._update:
             if  self._prev_state is not None:

@@ -57,16 +57,23 @@ def load_player(player_type, role, **kwags):
         alpha = kwags.get("alpha")
         epsilon = kwags.get("epsilon")
         model_file = kwags.get("model_file")
-        player = TDLAgent(role=role, update=update, alpha=alpha, epsilon=epsilon, model_file=model_file)
+        explore = kwags.get("explore")
+        temperature = kwags.get("temperature")
+        player = TDLAgent(role=role, update=update, alpha=alpha, epsilon=epsilon,
+                          model_file=model_file, temperature=temperature, explore_method=explore)
     elif player_type == "HumanCmdLine":
-        player = human = CmdLineHumanPlayer(role)
+        help_model_path = kwags.get("help_model_path")
+        player = human = CmdLineHumanPlayer(role, help_model_path=help_model_path)
     else:
         raise Exception("Unknown player type:{0}".format(player_type))
     return player
 
-def self_play(update, alpha, epsilon, model_file, games, verbose, black_type, white_type):
-    black_player = load_player(black_type, Board.BLACK, depth=3, update=update, alpha=alpha, epsilon=epsilon, model_file=model_file)
-    white_player = load_player(white_type, Board.WHITE, depth=3, update=update, alpha=alpha, epsilon=epsilon, model_file=model_file)
+def self_play(update, alpha, epsilon, model_file, games, verbose,
+              black_type, white_type, explore, temperature, helpmodel):
+    black_player = load_player(black_type, Board.BLACK, depth=3, update=update, alpha=alpha, epsilon=epsilon,
+                               model_file=model_file, explore=explore, temperature=temperature, help_model_path=helpmodel)
+    white_player = load_player(white_type, Board.WHITE, depth=3, update=update, alpha=alpha, epsilon=epsilon,
+                               model_file=model_file, explore=explore, temperature=temperature, help_model_path=helpmodel)
     game = Game(black_player, white_player, verbose)
     for i in range(0, games):
         game.run()
@@ -100,10 +107,14 @@ if __name__ == '__main__':
     parser.add_argument("--alpha", default=1.0, type=float, help="alpha")
     parser.add_argument("--epsilon", default=0.01, type=float, help="e-greedy")
     parser.add_argument("--model", default="./model/logbook.ckpt", help="model file")
+    parser.add_argument("--helpmodel", default=None, help="help model file for human player")
+    parser.add_argument("--temperature", default=0.1, type=float, help="softmax-exploration temperature")
+    explore_methods = ["epsilon", "softmax"]
+    parser.add_argument("--explore", default="epsilon", help="explore method", choices=explore_methods)
     parser.add_argument("--games", default=10000, type=int, help="number of games to play")
     args = parser.parse_args()
     print args
     if args.play:
-        self_play(args.update, args.alpha, args.epsilon, args.model, args.games, args.verbose, args.black, args.white)
+        self_play(args.update, args.alpha, args.epsilon, args.model, args.games, args.verbose, args.black, args.white, args.explore, args.temperature, args.helpmodel)
     if args.replay:
         replay(args.times, args.checkpoint, *args.book)

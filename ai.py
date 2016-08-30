@@ -115,22 +115,25 @@ class SimpleBot(Agent):
 from tdl import OthelloModel
 
 class CmdLineHumanPlayer(Agent):
-    def __init__(self, role):
+    def __init__(self, role, help_model_path=None):
         super(CmdLineHumanPlayer, self).__init__(role)
-        self.model = OthelloModel()
-        self.model.restore_params("./model/logbook.ckpt")
+        self._help_model = None
+        if help_model_path is not None
+            self._help_model = OthelloModel()
+            self._help_model.restore_params(help_model_path)
 
     def play(self, board):
         pos = board.feasible_pos(self.role)
         p = None
         while True:
             try:
-                scores = []
-                for r,c in pos:
-                    with board.flip2(r, c, self.role):
-                        stage = board.stage()
-                        scores.append(self.model.predict([board.board], stage)[0][0])
-                print ", ".join(["%s:%.03f" % (chr(i+ord("A")), scores[i]) for i in range(0, len(pos))])
+                if self._help_model is not None:
+                    scores = []
+                    for r,c in pos:
+                        with board.flip2(r, c, self.role):
+                            stage = board.stage()
+                            scores.append(self._help_model.predict([board.board], stage)[0][0])
+                    print ", ".join(["%s:%.03f" % (chr(i+ord("A")), scores[i]) for i in range(0, len(pos))])
                 l = raw_input("Enter your choise: ").strip().lower()
                 if l == "exit":
                     break
