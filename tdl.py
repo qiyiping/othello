@@ -49,10 +49,10 @@ class OthelloModel(object):
             # cost
             regularizers = (tf.nn.l2_loss(f1_weights) + tf.nn.l2_loss(f1_bias) +
                       tf.nn.l2_loss(f2_weights) + tf.nn.l2_loss(f2_bias))
-            cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) + 5e-4 * regularizers
+            cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) # + 5e-4 * regularizers
 
             # optimizer
-            optimizer = tf.train.AdagradOptimizer(learning_rate=0.05)
+            optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
             self._train_step.append(optimizer.minimize(cost))
 
         # init params
@@ -169,9 +169,10 @@ class TDLAgent(Agent):
         return board.blanks >= 59
 
     def _update_param(self, v):
-        prev_val = self._model.predict(self._prev_state)[0][0]
+        stage = 11 - (np.sum(self._prev_state == Board.BLANK) // 5)
+        prev_val = self._model.predict([self._prev_state], stage)[0][0]
         target = (1.0-self._alpha) * prev_val + self._alpha * v
-        self._model.update_param(self._prev_state, [[target]])
+        self._model.update_param([self._prev_state], [[target]], stage)
 
     def play(self, board):
         if self._is_first_step(board):

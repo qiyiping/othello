@@ -128,7 +128,8 @@ class CmdLineHumanPlayer(Agent):
                 scores = []
                 for r,c in pos:
                     with board.flip2(r, c, self.role):
-                        scores.append(self.model.predict([board.board])[0][0])
+                        stage = board.stage()
+                        scores.append(self.model.predict([board.board], stage)[0][0])
                 print ", ".join(["%s:%.03f" % (chr(i+ord("A")), scores[i]) for i in range(0, len(pos))])
                 l = raw_input("Enter your choise: ").strip().lower()
                 if l == "exit":
