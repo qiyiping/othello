@@ -47,33 +47,72 @@ def tell_game_stat(game, i):
     b,w,t = game.game_stat()
     print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
 
-def load_player(player_type, role, **kwags):
+import ConfigParser
+class Config(object):
+    def __init__(self, filename):
+        self._config = ConfigParser.ConfigParser()
+        self._config.read(args.player_conf)
+
+    def print_config(self):
+        sections = self._config.sections()
+        for s in sections:
+            print s
+            for k,v in self._config.items(s):
+                print "\t", k, v
+
+    def get_as_str(self, section, option, default=None):
+        try:
+            return self._config.get(section, option)
+        except:
+            return default
+
+    def get_as_int(self, section, option, default=None):
+        try:
+            return self._config.getint(section, option)
+        except:
+            return default
+
+    def get_as_float(self, section, option, default=None):
+        try:
+            return self._config.getfloat(section, option)
+        except:
+            return default
+
+    def get_as_boolean(self, section, option, default=None):
+        try:
+            return self._config.getboolean(section, option)
+        except:
+            return default
+
+def load_player(role, player_config):
+    if role == Board.BLACK:
+        section = "Black"
+    else:
+        section = "White"
+    player_type = player_config.get_as_str(section, "type")
     if player_type == "SimpleBot":
         evaluator = SimpleEvaluator(role)
-        depth = kwags.get("depth", 3)
+        depth = player_config.get_as_int(section, "depth", 3)
         player = SimpleBot(evaluator, depth, role)
     elif player_type == "TDLAgent":
-        update = kwags.get("update")
-        alpha = kwags.get("alpha")
-        epsilon = kwags.get("epsilon")
-        model_file = kwags.get("model_file")
-        explore = kwags.get("explore")
-        temperature = kwags.get("temperature")
+        update = player_config.get_as_boolean(section, "update", False)
+        alpha = player_config.get_as_float(section, "alpha", 1.0)
+        epsilon = player_config.get_as_float(section, "epsilon", 0.01)
+        model_file = player_config.get_as_str(section, "model", None)
+        explore = player_config.get_as_str(section, "explore", None)
+        temperature = player_config.get_as_float(section, "temperature", 0.1)
         player = TDLAgent(role=role, update=update, alpha=alpha, epsilon=epsilon,
                           model_file=model_file, temperature=temperature, explore_method=explore)
     elif player_type == "HumanCmdLine":
-        help_model_path = kwags.get("help_model_path")
+        help_model_path = player_config.get_as_str(section, "help_model")
         player = human = CmdLineHumanPlayer(role, help_model_path=help_model_path)
     else:
         raise Exception("Unknown player type:{0}".format(player_type))
     return player
 
-def self_play(update, alpha, epsilon, model_file, games, verbose,
-              black_type, white_type, explore, temperature, helpmodel):
-    black_player = load_player(black_type, Board.BLACK, depth=3, update=update, alpha=alpha, epsilon=epsilon,
-                               model_file=model_file, explore=explore, temperature=temperature, help_model_path=helpmodel)
-    white_player = load_player(white_type, Board.WHITE, depth=3, update=update, alpha=alpha, epsilon=epsilon,
-                               model_file=model_file, explore=explore, temperature=temperature, help_model_path=helpmodel)
+def self_play(games, verbose, player_config):
+    black_player = load_player(Board.BLACK, player_config)
+    white_player = load_player(Board.WHITE, player_config)
     game = Game(black_player, white_player, verbose)
     for i in range(0, games):
         game.run()
@@ -99,22 +138,22 @@ if __name__ == '__main__':
     parser.add_argument("--book", default="./database/WTH.txt", help="log book", nargs="+")
     parser.add_argument("--checkpoint", default="./model/logbook.ckpt", help="checkpoint file")
     parser.add_argument("--play", default=False, action="store_true", help="play games")
-    player_candidates = ["SimpleBot", "TDLAgent", "HumanCmdLine"]
-    parser.add_argument("--black", default="SimpleBot", choices=player_candidates, help="black player")
-    parser.add_argument("--white", default="TDLAgent", choices=player_candidates, help="white player")
+    parser.add_argument("--player_conf", default="./config/config.ini", help="player config")
     parser.add_argument("--verbose", default=1, type=int, help="verbose level")
-    parser.add_argument("--update", action="store_true", help="whether to update model")
-    parser.add_argument("--alpha", default=1.0, type=float, help="alpha")
-    parser.add_argument("--epsilon", default=0.01, type=float, help="e-greedy")
-    parser.add_argument("--model", default="./model/logbook.ckpt", help="model file")
-    parser.add_argument("--helpmodel", default=None, help="help model file for human player")
-    parser.add_argument("--temperature", default=0.1, type=float, help="softmax-exploration temperature")
-    explore_methods = ["epsilon", "softmax"]
-    parser.add_argument("--explore", default="epsilon", help="explore method", choices=explore_methods)
     parser.add_argument("--games", default=10000, type=int, help="number of games to play")
     args = parser.parse_args()
+    if args.play:
+        player_config = Config(args.player_conf)
+
+    print '-' * 70
+    print "CONFIG"
+    print '-' * 70
     print args
     if args.play:
-        self_play(args.update, args.alpha, args.epsilon, args.model, args.games, args.verbose, args.black, args.white, args.explore, args.temperature, args.helpmodel)
+        player_config.print_config()
+    print '-' * 70
+
+    if args.play:
+        self_play(args.games, args.verbose, player_config)
     if args.replay:
         replay(args.times, args.checkpoint, *args.book)
