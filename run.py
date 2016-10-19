@@ -2,10 +2,11 @@
 import logging
 
 import numpy as np
+import ConfigParser
 
 from othello import Board, Game, Replay
-from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta
-from tdl import TDLAgent, TDLProcessor
+from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta, RandomPlayer
+from tdl import TDLAgent
 import time
 from database import TextDb
 
@@ -41,13 +42,15 @@ class SimpleEvaluator(object):
 def save_model(player):
     if type(player) is TDLAgent:
         ts = int(time.time())
-        player.save_model("./model/{0}_{1}.ckpt".format(player.role, ts))
+        tp = "WHITE"
+        if player.role == Board.BLACK:
+            tp = "BLACK"
+        player.save_model("./model/{0}_{1}.ckpt".format(tp, ts))
 
 def tell_game_stat(game, i):
     b,w,t = game.game_stat()
     print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
 
-import ConfigParser
 class Config(object):
     def __init__(self, filename):
         self._config = ConfigParser.ConfigParser()
@@ -105,7 +108,9 @@ def load_player(role, player_config):
                           model_file=model_file, temperature=temperature, explore_method=explore)
     elif player_type == "HumanCmdLine":
         help_model_path = player_config.get_as_str(section, "help_model")
-        player = human = CmdLineHumanPlayer(role, help_model_path=help_model_path)
+        player = CmdLineHumanPlayer(role, help_model_path=help_model_path)
+    elif player_type == "RandomPlayer":
+        player = RandomPlayer(role)
     else:
         raise Exception("Unknown player type:{0}".format(player_type))
     return player
@@ -124,36 +129,20 @@ def self_play(games, verbose, player_config):
     save_model(black_player)
     tell_game_stat(game, i)
 
-def replay(times, checkpoint, *game_books):
-    db = TextDb(*game_books)
-    r = Replay(db)
-    processor = TDLProcessor(Board.WHITE, checkpoint)
-    r.replay(processor, times)
-
 import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="run.py", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--replay", default=False, action="store_true", help="replay log book")
-    parser.add_argument("--times", default=1, type=int, help="times to replay the log book")
-    parser.add_argument("--book", default="./database/WTH.txt", help="log book", nargs="+")
-    parser.add_argument("--checkpoint", default="./model/logbook.ckpt", help="checkpoint file")
-    parser.add_argument("--play", default=False, action="store_true", help="play games")
     parser.add_argument("--player_conf", default="./config/config.ini", help="player config")
     parser.add_argument("--verbose", default=1, type=int, help="verbose level")
     parser.add_argument("--games", default=10000, type=int, help="number of games to play")
+
     args = parser.parse_args()
-    if args.play:
-        player_config = Config(args.player_conf)
+    player_config = Config(args.player_conf)
 
     print '-' * 70
     print "CONFIG"
     print '-' * 70
-    print args
-    if args.play:
-        player_config.print_config()
+    player_config.print_config()
     print '-' * 70
 
-    if args.play:
-        self_play(args.games, args.verbose, player_config)
-    if args.replay:
-        replay(args.times, args.checkpoint, *args.book)
+    self_play(args.games, args.verbose, player_config)

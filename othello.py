@@ -85,8 +85,10 @@ class Board(object):
     def board(self):
         return self._board
 
+    NUMBER_OF_STAGES = 11
+
     def stage(self):
-        return 11 - self.blanks // 5
+        return self.blanks // 6
 
     @property
     def size(self):
@@ -143,26 +145,6 @@ class Board(object):
                                                             self.score(Board.WHITE)))
         sys.stdout.flush()
 
-class Replay(object):
-    def __init__(self, database):
-        self._database = database
-
-    def _replay_once(self, processor, d1, d2):
-        for moves, result in self._database.xgames(d1, d2):
-            board = Board()
-            for player,i,j in moves:
-                processor(player, i, j, result, board)
-                board.flip(i, j, player)
-            processor.after_one_game()
-        processor.after_one_replay()
-
-    def replay(self, processor, times=1):
-        for _ in range(0, times):
-            self._replay_once(processor, False, False)
-            self._replay_once(processor, True, False)
-            self._replay_once(processor, False, True)
-            self._replay_once(processor, True, True)
-
 class Game(object):
     def __init__(self, black_player, white_player, verbose=0):
         assert black_player.role == Board.BLACK
@@ -179,6 +161,11 @@ class Game(object):
     def run(self):
         board = Board()
         turn = 0
+
+        for p in self._players:
+            p.begin_of_game(board)
+
+
         while not board.is_terminal_state():
             pos = board.feasible_pos(self._players[turn].role)
             if len(pos) > 0:
@@ -199,15 +186,15 @@ class Game(object):
                     break
             turn = (turn+1) % 2
 
+        for p in self._players:
+            p.end_of_game(board)
+
         if self._verbose > 1:
             print '-'*60
             print 'final result'
             print '-'*60
             board.print_for_player(Board.BLANK)
             print '-'*60
-
-        for p in self._players:
-            p.tell_result(board)
 
         black_score = board.score(Board.BLACK)
         white_score = board.score(Board.WHITE)

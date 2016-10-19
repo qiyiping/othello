@@ -84,7 +84,10 @@ class Agent(object):
     def play(self, board):
         pass
 
-    def tell_result(self, board):
+    def begin_of_game(self, board):
+        pass
+
+    def end_of_game(self, board):
         pass
 
     @property
@@ -94,6 +97,15 @@ class Agent(object):
     @role.setter
     def role(self, value):
         self._role = value
+
+class RandomPlayer(Agent):
+    def __init__(self, role):
+        super(RandomPlayer, self).__init__(role)
+
+    def play(self, board):
+        p = board.feasible_pos(self.role)
+        idx = np.random.randint(0, len(p))
+        return p[idx]
 
 class SimpleBot(Agent):
     def __init__(self, evaluator, depth, role):

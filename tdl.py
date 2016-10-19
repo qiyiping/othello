@@ -2,6 +2,8 @@
 
 import tensorflow as tf
 from othello import Board
+from ai import Agent
+import numpy as np
 
 class OthelloModel(object):
     def __init__(self):
@@ -13,7 +15,7 @@ class OthelloModel(object):
             self._prediction = []
             self._train_step = []
 
-            for i in range(0, 12):
+            for i in range(0, Board.NUMBER_OF_STAGES):
                 # model
                 with tf.name_scope("conv1"):
                     output_channels1 = 32
@@ -83,65 +85,8 @@ class OthelloModel(object):
     def update_param(self, x, y, stage):
         self._sess.run(self._train_step[stage], feed_dict={self.x: x, self.y: y})
 
-from ai import Agent, ScoreEvaluator, AlphaBeta
-import numpy as np
-
-class TDLProcessor(object):
-    def __init__(self, role, model_path, batch_size=50):
-        self.role = role
-        self.model = OthelloModel()
-        self.model_path = model_path
-        self.batch_size = batch_size
-        self.game_processed = 0
-        self.x = {}
-        self.y = {}
-
-    def _add_sample(self, board, target):
-        stage = board.stage()
-        if stage not in self.x:
-            self.x[stage] = []
-        if stage not in self.y:
-            self.y[stage] =[]
-        self.x[stage].append(board.board.copy())
-        self.y[stage].append([target])
-
-    def __call__(self, player, i, j, result, board):
-        if player == self.role:
-            with board.flip2(i,j,player):
-                target = 0.0
-                if self.role == Board.BLACK and result > 0:
-                    target = 1.0
-                if self.role == Board.WHITE and result < 0:
-                    target = 1.0
-                self._add_sample(board, target)
-
-    def after_one_game(self):
-        self.game_processed += 1
-        if self.game_processed % self.batch_size == 0:
-            for stage in range(0, 12):
-                if stage in self.x:
-                    self.model.update_param(self.x[stage], self.y[stage], stage)
-                    self.x = {}
-                    self.y = {}
-        if self.game_processed % 10000 == 0:
-            print "# game processed: ", self.game_processed
-
-    def after_one_replay(self):
-        if len(self.x) > 0:
-            for stage in range(0, 12):
-                if stage in self.x:
-                    self.model.update_param(self.x[stage], self.y[stage], stage)
-                    self.x = {}
-                    self.y = {}
-        self.save_model()
-
-    def save_model(self, model_path=None):
-        if model_path is None:
-            model_path = self.model_path
-        self.model.save_params(model_path)
-
 class TDLAgent(Agent):
-    def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None, depth=3, temperature=0.1, explore_method="epsilon"):
+    def __init__(self, role, update=False, alpha=0.1, epsilon=0.1, model_file=None, temperature=0.1, explore_method="epsilon"):
         super(TDLAgent, self).__init__(role)
         self._model = OthelloModel()
         if model_file is not None:
@@ -149,10 +94,6 @@ class TDLAgent(Agent):
         self._alpha = alpha
         self._update = update
         self._epsilon = epsilon
-        self._prev_state = None
-        self._depth = depth
-        score_evaluator = ScoreEvaluator(role)
-        self._searcher = AlphaBeta(score_evaluator, depth)
         self._temperature = temperature
         if explore_method not in ["epsilon", "softmax"]:
             raise Exception("`explore_method' should be 'epsilon' or 'softmax'.")
@@ -183,54 +124,37 @@ class TDLAgent(Agent):
         if self._update:
             self._model.save_params(model_path)
 
-    def _is_first_step(self, board):
-        return board.blanks >= 59
-
-    def _update_param(self, v):
-        stage = 11 - (np.sum(self._prev_state == Board.BLANK) // 5)
-        prev_val = self._model.predict([self._prev_state], stage)[0][0]
-        target = (1.0-self._alpha) * prev_val + self._alpha * v
-        self._model.update_param([self._prev_state], [[target]], stage)
+    def _update_param(self, board, v):
+        stage = board.stage()
+        v_old = self._model.predict([board.board], stage)[0][0]
+        target = v_old + self._alpha * (v - v_old)
+        self._model.update_param([board.board], [[target]], stage)
 
     def play(self, board):
-        if self._is_first_step(board):
-            self._prev_state = None
-
-        if board.blanks <= self._depth:
-            s, p = self._searcher.search(board, self.role)
-            if s >=32:
-                v = 1.0
-            else:
-                v = 0.0
-        else:
-            pos = board.feasible_pos(self.role)
-            next_vals = []
-            for i,j in pos:
-                with board.flip2(i, j, self.role):
-                    stage = board.stage()
-                    if board.is_terminal_state():
-                        if board.wins(self.role):
-                            next_vals.append(1.0)
-                        else:
-                            next_vals.append(0.0)
+        pos = board.feasible_pos(self.role)
+        next_vals = []
+        for i,j in pos:
+            with board.flip2(i, j, self.role):
+                stage = board.stage()
+                if board.is_terminal_state():
+                    if board.wins(self.role):
+                        next_vals.append(1.0)
                     else:
-                        next_vals.append(self._model.predict([board.board], stage)[0][0])
-            if self._explore_method == "epsilon":
-                p,v = self._epsilon_greedy(pos, next_vals)
-            elif self._explore_method == "softmax":
-                p,v = self._softmax_weighted(pos, next_vals)
+                        next_vals.append(0.0)
+                else:
+                    next_vals.append(self._model.predict([board.board], stage)[0][0])
+        if self._explore_method == "epsilon":
+            p,v = self._epsilon_greedy(pos, next_vals)
+        elif self._explore_method == "softmax":
+            p,v = self._softmax_weighted(pos, next_vals)
 
         if self._update:
-            if  self._prev_state is not None:
-                self._update_param(v)
-            with board.flip2(p[0], p[1], self.role):
-                self._prev_state = board.board.copy()
+            self._update_param(board, v)
 
         return p
 
-    def tell_result(self, board):
-        if self._update and self._prev_state is not None:
-            v = 0.0
-            if board.wins(self.role):
-                v = 1.0
-            self._update_param(v)
+    def begin_of_game(self, board):
+        pass
+
+    def end_of_game(self, board):
+        pass
