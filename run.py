@@ -4,11 +4,10 @@ import logging
 import numpy as np
 import ConfigParser
 
-from othello import Board, Game, Replay
+from othello import Board, Game
 from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta, RandomPlayer
 from tdl import TDLAgent
 import time
-from database import TextDb
 
 class SimpleEvaluator(object):
     def __init__(self, role):

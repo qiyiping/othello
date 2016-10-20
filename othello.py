@@ -66,6 +66,13 @@ class Board(object):
     def score(self, player):
         return np.sum(self._board == player)
 
+
+    @classmethod
+    def _wins(cls, b, player):
+        s1 = np.sum(b == player)
+        s2 = np.sum(b == Board.opponent(player))
+        return s1 > s2
+
     def wins(self, player):
         s1 = self.score(player)
         s2 = self.score(Board.opponent(player))
@@ -89,6 +96,10 @@ class Board(object):
 
     def stage(self):
         return self.blanks // 6
+
+    @classmethod
+    def _stage(cls, bd):
+        return np.sum(bd == Board.BLANK) // 6
 
     @property
     def size(self):

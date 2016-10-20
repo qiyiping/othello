@@ -124,11 +124,11 @@ class TDLAgent(Agent):
         if self._update:
             self._model.save_params(model_path)
 
-    def _update_param(self, board, v):
-        stage = board.stage()
-        v_old = self._model.predict([board.board], stage)[0][0]
+    def _update_param(self, b, v):
+        stage = Board._stage(b)
+        v_old = self._model.predict([b], stage)[0][0]
         target = v_old + self._alpha * (v - v_old)
-        self._model.update_param([board.board], [[target]], stage)
+        self._model.update_param([b], [[target]], stage)
 
     def play(self, board):
         pos = board.feasible_pos(self.role)
@@ -149,12 +149,19 @@ class TDLAgent(Agent):
             p,v = self._softmax_weighted(pos, next_vals)
 
         if self._update:
-            self._update_param(board, v)
+            if self._s is not None:
+                self._update_param(self._s, v)
+            with board.flip2(p[0], p[1], self.role):
+                self._s = board.board.copy()
 
         return p
 
     def begin_of_game(self, board):
-        pass
+        self._s = None
 
     def end_of_game(self, board):
-        pass
+        if self._update and self._s is not None:
+            v = 0.0
+            if board.wins(self.role):
+                v = 1.0
+            self._update_param(self._s, v)
