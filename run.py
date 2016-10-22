@@ -133,7 +133,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="run.py", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--player_conf", default="./config/config.ini", help="player config")
     parser.add_argument("--verbose", default=1, type=int, help="verbose level")
-    parser.add_argument("--games", default=10000, type=int, help="number of games to play")
+    parser.add_argument("--games", default=100000, type=int, help="number of games to play")
 
     args = parser.parse_args()
     player_config = Config(args.player_conf)

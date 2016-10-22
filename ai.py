@@ -99,10 +99,20 @@ class Agent(object):
         self._role = value
 
 class RandomPlayer(Agent):
-    def __init__(self, role):
+    def __init__(self, role, depth=6):
         super(RandomPlayer, self).__init__(role)
+        score_evaluator = ScoreEvaluator(role)
+        self._final_searcher = AlphaBeta(score_evaluator, depth)
+        self._depth = depth
 
     def play(self, board):
+        if board.blanks <= self._depth:
+            _, act = self._final_searcher.search(board, self.role)
+            return act
+        else:
+            return self.random_play(board)
+
+    def random_play(self, board):
         p = board.feasible_pos(self.role)
         idx = np.random.randint(0, len(p))
         return p[idx]
