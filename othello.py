@@ -169,6 +169,24 @@ class Game(object):
     def game_stat(self):
         return self._black_wins, self._white_wins, self._ties
 
+    @property
+    def black_player(self):
+        return self._players[0]
+
+    @black_player.setter
+    def black_player(self, player):
+        assert player.role == Board.BLACK
+        self._players[0] = player
+
+    @property
+    def white_player(self):
+        return self._players[1]
+
+    @white_player.setter
+    def white_player(self, player):
+        assert player.role == Board.WHITE
+        self._players[1] = player
+
     def run(self):
         board = Board()
         turn = 0

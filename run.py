@@ -5,7 +5,7 @@ import numpy as np
 import ConfigParser
 
 from othello import Board, Game
-from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta, RandomPlayer
+from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta, RandomPlayer, HybirdBot
 from tdl import TDLAgent
 import time
 
@@ -46,9 +46,14 @@ def save_model(player):
             tp = "BLACK"
         player.save_model("./model/{0}_{1}.ckpt".format(tp, ts))
 
-def tell_game_stat(game, i):
+def tell_game_stat(game):
     b,w,t = game.game_stat()
-    print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(i, b, 1.*b/i, w, 1.*w/i, t)
+    num_of_games = b + w + t
+    print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(num_of_games,
+                                                                                         b,
+                                                                                         1.*b/num_of_games,
+                                                                                         w,
+                                                                                         1.*w/num_of_games, t)
 
 class Config(object):
     def __init__(self, filename):
@@ -110,6 +115,10 @@ def load_player(role, player_config):
         player = CmdLineHumanPlayer(role, help_model_path=help_model_path)
     elif player_type == "RandomPlayer":
         player = RandomPlayer(role)
+    elif player_type == "HybirdBot":
+        p1 = RandomPlayer(role)
+        p2 = SimpleBot(SimpleEvaluator(role), 3, role)
+        player = HybirdBot(role, [p1,p2], [0.8, 0.2])
     else:
         raise Exception("Unknown player type:{0}".format(player_type))
     return player
@@ -118,22 +127,22 @@ def self_play(games, verbose, player_config):
     black_player = load_player(Board.BLACK, player_config)
     white_player = load_player(Board.WHITE, player_config)
     game = Game(black_player, white_player, verbose)
-    for i in range(0, games):
+    for i in range(1, games+1):
         game.run()
         if i % 100 == 0 and i > 0:
             save_model(white_player)
             save_model(black_player)
-            tell_game_stat(game, i)
+            tell_game_stat(game)
     save_model(white_player)
     save_model(black_player)
-    tell_game_stat(game, i)
+    tell_game_stat(game)
 
 import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="run.py", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--player_conf", default="./config/config.ini", help="player config")
     parser.add_argument("--verbose", default=1, type=int, help="verbose level")
-    parser.add_argument("--games", default=100000, type=int, help="number of games to play")
+    parser.add_argument("--games", default=500000, type=int, help="number of games to play")
 
     args = parser.parse_args()
     player_config = Config(args.player_conf)

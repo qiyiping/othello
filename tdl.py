@@ -18,22 +18,22 @@ class OthelloModel(object):
             for i in range(0, Board.NUMBER_OF_STAGES):
                 # model
                 with tf.name_scope("conv1"):
-                    output_channels1 = 32
+                    output_channels1 = 16
                     kernel = tf.Variable(tf.truncated_normal([3,3,1,output_channels1], stddev=0.1))
-                    bias = tf.Variable(tf.zeros([32]))
+                    bias = tf.Variable(tf.zeros([output_channels1]))
                     x = tf.reshape(self.x, [-1,8,8,1])
                     h = tf.nn.relu(tf.nn.conv2d(x, kernel, strides=[1,1,1,1], padding="SAME") + bias)
                     p1 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
                     self._params.extend([kernel, bias])
                 with tf.name_scope("conv2"):
-                    output_channels2 = 64
+                    output_channels2 = 16
                     kernel = tf.Variable(tf.truncated_normal([3,3,output_channels1,output_channels2], stddev=0.1))
-                    bias = tf.Variable(tf.zeros([64]))
+                    bias = tf.Variable(tf.zeros([output_channels2]))
                     h = tf.nn.relu(tf.nn.conv2d(p1, kernel, strides=[1,1,1,1], padding="SAME")+ bias)
                     p2 = tf.nn.max_pool(h, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME")
                     self._params.extend([kernel, bias])
                 with tf.name_scope("full_connect1"):
-                    full1_size = 8
+                    full1_size = 16
                     conv2_size = 8 // 4 * 8 // 4 * output_channels2
                     x = tf.reshape(p2, [-1, conv2_size])
                     f1_weights = tf.Variable(tf.truncated_normal([conv2_size, full1_size], stddev=0.1))
@@ -55,7 +55,7 @@ class OthelloModel(object):
                 cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, self.y)) # + 5e-4 * regularizers
 
                 # optimizer
-                optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
+                optimizer = tf.train.AdagradOptimizer(learning_rate=0.05)
                 self._train_step.append(optimizer.minimize(cost))
 
             # init params

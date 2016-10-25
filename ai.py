@@ -117,6 +117,33 @@ class RandomPlayer(Agent):
         idx = np.random.randint(0, len(p))
         return p[idx]
 
+class HybirdBot(Agent):
+    def __init__(self, role, players, weights):
+        super(HybirdBot, self).__init__(role)
+        assert len(players) == len(weights)
+        for p in players:
+            assert p.role == role
+        self._players = players
+        self._probs = np.zeros(len(players))
+        s = sum(weights)
+        assert s > 0
+        for i,w in enumerate(weights):
+            assert w > 0
+            self._probs[i] = 1.*w/s
+
+    def play(self, board):
+        return self._choose_player().play(board)
+
+    def _choose_player(self):
+        r = np.random.rand()
+        s = 0.0
+        idx = 0
+        for i,v in enumerate(self._probs):
+            s += v
+            if s >= r:
+                idx = i
+        return self._players[idx]
+
 class SimpleBot(Agent):
     def __init__(self, evaluator, depth, role):
         super(SimpleBot, self).__init__(role)
