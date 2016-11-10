@@ -2,6 +2,17 @@
 
 import numpy as np
 
+def epsilon_greedy(epsilon, options, vals, max_player=True):
+    r = np.random.rand()
+    if r < 1 - epsilon:
+        if max_player:
+            idx = np.argmax(vals)
+        else:
+            idx = np.argmin(vals)
+    else:
+        idx = np.random.randint(low=0, high=len(options))
+    return options[idx], vals[idx]
+
 class Hash(object):
     def __init__(self, positions=64, pieces=2, filename=None):
         self._positions = positions

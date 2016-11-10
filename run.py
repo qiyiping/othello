@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-import logging
-
 import numpy as np
 import ConfigParser
 
 from othello import Board, Game
-from ai import CmdLineHumanPlayer, SimpleBot, AlphaBeta, RandomPlayer, HybirdBot
-from tdl import TDLAgent
+from ai import CmdLineHumanPlayer, SimpleBot
+from value import ModelScorer
 import time
 
 class SimpleEvaluator(object):
@@ -37,14 +35,6 @@ class SimpleEvaluator(object):
 
     def __call__(self, board):
         return np.sum(self._w * (board.board == self._role))
-
-def save_model(player):
-    if type(player) is TDLAgent:
-        ts = int(time.time())
-        tp = "WHITE"
-        if player.role == Board.BLACK:
-            tp = "BLACK"
-        player.save_model("./model/{0}_{1}.ckpt".format(tp, ts))
 
 def tell_game_stat(game):
     b,w,t = game.game_stat()
@@ -96,46 +86,34 @@ def load_player(role, player_config):
         section = "Black"
     else:
         section = "White"
+
     player_type = player_config.get_as_str(section, "type")
     if player_type == "SimpleBot":
-        evaluator = SimpleEvaluator(role)
+        evaluator_type = player_config.get_as_str(section, "evaluator")
+        model = player_config.get_as_str(section, "model")
+        if evaluator_type == "simple":
+            evaluator = SimpleEvaluator(role)
+        else:
+            evaluator = ModelScorer()
+            evaluator.load(model)
         depth = player_config.get_as_int(section, "depth", 3)
         player = SimpleBot(evaluator, depth, role)
-    elif player_type == "TDLAgent":
-        update = player_config.get_as_boolean(section, "update", False)
-        alpha = player_config.get_as_float(section, "alpha", 1.0)
-        epsilon = player_config.get_as_float(section, "epsilon", 0.01)
-        model_file = player_config.get_as_str(section, "model", None)
-        explore = player_config.get_as_str(section, "explore", None)
-        temperature = player_config.get_as_float(section, "temperature", 0.1)
-        player = TDLAgent(role=role, update=update, alpha=alpha, epsilon=epsilon,
-                          model_file=model_file, temperature=temperature, explore_method=explore)
     elif player_type == "HumanCmdLine":
-        help_model_path = player_config.get_as_str(section, "help_model")
-        player = CmdLineHumanPlayer(role, help_model_path=help_model_path)
-    elif player_type == "RandomPlayer":
-        player = RandomPlayer(role)
-    elif player_type == "HybirdBot":
-        p1 = RandomPlayer(role)
-        p2 = SimpleBot(SimpleEvaluator(role), 3, role)
-        player = HybirdBot(role, [p1,p2], [0.8, 0.2])
+        player = CmdLineHumanPlayer(role)
     else:
         raise Exception("Unknown player type:{0}".format(player_type))
     return player
 
-def self_play(games, verbose, player_config):
+def play(games, verbose, player_config):
     black_player = load_player(Board.BLACK, player_config)
     white_player = load_player(Board.WHITE, player_config)
     game = Game(black_player, white_player, verbose)
     for i in range(1, games+1):
         game.run()
         if i % 100 == 0 and i > 0:
-            save_model(white_player)
-            save_model(black_player)
             tell_game_stat(game)
-    save_model(white_player)
-    save_model(black_player)
     tell_game_stat(game)
+
 
 import argparse
 if __name__ == '__main__':
@@ -153,4 +131,4 @@ if __name__ == '__main__':
     player_config.print_config()
     print '-' * 70
 
-    self_play(args.games, args.verbose, player_config)
+    play(args.games, args.verbose, player_config)
