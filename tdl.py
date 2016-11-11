@@ -25,13 +25,13 @@ def self_play(n, model):
                             vals.append(b.score(Board.BLACK) - b.score(Board.WHITE))
                         else:
                             vals.append(model(b))
-                (a0, a1), v = epsilon_greedy(0.01, options, vals, p == Board.BLACK)
+                (a0, a1), v = epsilon_greedy(0.02, options, vals, p == Board.BLACK)
                 b.flip(a0, a1, p)
                 model.update(b.board, [v])
 
             p = Board.opponent(p)
 
-        if t % 10 == 0:
+        if t % 100 == 0:
             logging.info("number of games played: {}".format(t))
             logging.info(b.cache_status())
 
@@ -43,4 +43,5 @@ def self_play(n, model):
 if __name__ == '__main__':
     logging.basicConfig(filename='tdl.log',level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
     model = ModelScorer()
-    self_play(50, model)
+    model.load("/Users/qiyiping/Projects/qiyiping/othello/model/model.cpt-4")
+    self_play(100000, model)

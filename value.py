@@ -21,7 +21,7 @@ class ModelScorer(object):
             w = tf.Variable(tf.truncated_normal([s, 1], stddev=0.1))
             self._prediction = tf.matmul(tf.reshape(h, [-1, s]), w)
             self._cost = tf.reduce_mean(tf.square(self.y - self._prediction))
-            self._optimizer = tf.train.AdagradOptimizer(learning_rate=0.01)
+            self._optimizer = tf.train.AdagradOptimizer(learning_rate=0.07)
             self._train = self._optimizer.minimize(self._cost)
 
             self._session = tf.Session()
