@@ -3,6 +3,7 @@ import numpy as np
 from contextlib import contextmanager
 import sys
 import traceback
+from util import Hash
 
 class Board(object):
     BLANK = 0
@@ -22,39 +23,83 @@ class Board(object):
     def __init__(self, size=8):
         assert size % 2 == 0
         self._size = size
-        self._board = np.zeros((size, size), dtype=np.int)
-        i = size / 2
+        self.init_board()
+        self._feasible_pos_cache = {}
+        self._board_state_cache = {}
+        self._hash = Hash()
+
+    def init_board(self):
+        self._board = np.zeros((self._size, self._size), dtype=np.int)
+        i = self._size / 2
         self._board[i-1][i-1] = Board.WHITE
         self._board[i-1][i] = Board.BLACK
         self._board[i][i] = Board.WHITE
         self._board[i][i-1] = Board.BLACK
 
-    def feasible_pos(self, player):
+    def cache_status(self):
+        return "position cache: {}, state cache: {}".format(len(self._feasible_pos_cache),
+                                                            len(self._board_state_cache))
+
+    def feasible_pos(self, player, enable_cache=True):
+        h = self._hash(self._board) + player
+        if enable_cache and (h in self._feasible_pos_cache):
+            return self._feasible_pos_cache[h]
+
         pos = []
-        sz = self.size
-        for i in range(0, sz):
-            for j in range(0, sz):
-                if self.is_feasible(i, j, player):
-                    pos.append((i, j))
+        xs, ys = np.where(self._board == Board.BLANK)
+        for i,j in zip(xs, ys):
+            if self.is_feasible(i, j, player):
+                pos.append((i, j))
+
+        self._feasible_pos_cache[h] = pos
         return pos
 
     def is_terminal_state(self):
-        return len(self.feasible_pos(Board.BLACK)) == 0 and len(self.feasible_pos(Board.WHITE)) == 0
+        h = self._hash(self._board)
+        if h in self._board_state_cache:
+            return self._board_state_cache[h]
+
+        xs, ys = np.where(self._board == Board.BLANK)
+        for i,j in zip(xs, ys):
+            for di, dj in Board.DIRECTIONS:
+                black, white = False, False
+                for d in range(1, self._size):
+                    ii = i + di * d
+                    jj = j + dj * d
+                    if not (ii < self._size and ii >= 0 and jj < self._size and jj >= 0):
+                        break
+                    piece = self._board[ii][jj]
+                    if piece == Board.BLANK:
+                        break
+                    if piece == Board.WHITE:
+                        white = True
+                    else:
+                        black = True
+                    if black and white:
+                        self._board_state_cache[h] = False
+                        return False
+
+        self._board_state_cache[h] = True
+        return True
 
     def flip(self, i, j, player):
-        self._board[i][j] = player
+        assert self._board[i][j] == Board.BLANK
+        cnt = 0
         for di, dj in Board.DIRECTIONS:
-            for d in range(1, self.size):
+            for d in range(1, self._size):
                 ii = i + di * d
                 jj = j + dj * d
-                if not self._is_valid_pos(ii, jj):
+                if not (ii < self._size and ii >= 0 and jj < self._size and jj >= 0):
                     break
                 if self._board[ii][jj] == Board.BLANK:
                     break
                 if self._board[ii][jj] == player:
                     for x in range(1, d):
                         self._board[i+di*x][j+dj*x] = player
+                        cnt += 1
                     break
+        assert cnt > 0
+        self._board[i][j] = player
 
     @contextmanager
     def flip2(self, i, j, player):
@@ -92,29 +137,26 @@ class Board(object):
     def board(self):
         return self._board
 
-    NUMBER_OF_STAGES = 11
+    # NUMBER_OF_STAGES = 11
 
-    def stage(self):
-        return self.blanks // 6
+    # def stage(self):
+    #     return self.blanks // 6
 
-    @classmethod
-    def _stage(cls, bd):
-        return np.sum(bd == Board.BLANK) // 6
+    # @classmethod
+    # def _stage(cls, bd):
+    #     return np.sum(bd == Board.BLANK) // 6
 
     @property
     def size(self):
         return self._size
 
-
     def is_feasible(self, i, j, player):
-        if self._board[i][j] != Board.BLANK:
-            return False
         cnt = 0
         for di, dj in Board.DIRECTIONS:
-            for d in range(1, self.size):
+            for d in range(1, self._size):
                 ii = i + di * d
                 jj = j + dj * d
-                if not self._is_valid_pos(ii, jj):
+                if not (ii < self._size and ii >= 0 and jj < self._size and jj >= 0):
                     break
                 if self._board[ii][jj] == Board.BLANK:
                     break
@@ -124,7 +166,7 @@ class Board(object):
         return cnt > 0
 
     def _is_valid_pos(self, i, j):
-        return (i < self.size and i >= 0 and j < self.size and j >= 0)
+        return (i < self._size and i >= 0 and j < self._size and j >= 0)
 
     def _cmd_symbol(self, i, j):
         if self._board[i][j] == Board.BLANK:

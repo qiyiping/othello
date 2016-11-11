@@ -26,15 +26,13 @@ class Hash(object):
     def save(self, filename):
         np.save(filename, self._table)
 
-    def _hash(self, board):
+    def __call__(self, board):
         """https://en.wikipedia.org/wiki/Zobrist_hashing
         """
         flatten_board = board.flatten()
         h = 0
         for i,v in enumerate(flatten_board):
-            if v > 0:
-                h ^= self._table[i][v-1]
+            # FIXME: It depends on the way piece value is defined.
+            if v != 0:
+                h ^= self._table[i][(v+1)/2]
         return h
-
-    def __call__(self, board):
-        return self._hash(board)
