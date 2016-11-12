@@ -5,10 +5,10 @@ import logging
 from othello import Board
 from util import epsilon_greedy
 from value import ModelScorer
-# from ai import AlphaBeta
+from evaluation import evaluate
+from database import TextDb
 
-
-def self_play(n, model):
+def self_play(n, model, db):
     b = Board()
     for t in xrange(1, n+1):
         b.init_board()
@@ -25,23 +25,30 @@ def self_play(n, model):
                             vals.append(b.score(Board.BLACK) - b.score(Board.WHITE))
                         else:
                             vals.append(model(b))
-                (a0, a1), v = epsilon_greedy(0.02, options, vals, p == Board.BLACK)
+                (a0, a1), v = epsilon_greedy(0.03, options, vals, p == Board.BLACK)
                 b.flip(a0, a1, p)
                 model.update(b.board, [v])
 
             p = Board.opponent(p)
 
         if t % 100 == 0:
-            logging.info("number of games played: {}".format(t))
+            logging.info("Number of games played: {}".format(t))
             logging.info(b.cache_status())
 
         if t % 1000 == 0:
             model.save("./model/model.cpt")
+
+        if t % 5000 == 0:
+            n, mse = evaluate(db, model)
+            logging.info("Number of Games:{}, MSE: {}".format(n, mse))
+
     model.save("./model/model.cpt")
 
 
 if __name__ == '__main__':
     logging.basicConfig(filename='tdl.log',level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
     model = ModelScorer()
-    model.load("/Users/qiyiping/Projects/qiyiping/othello/model/model.cpt-4")
-    self_play(100000, model)
+    model.load("./model/model.cpt-14")
+    db = TextDb("./database/logbook.small.txt")
+    logging.info("Database state: {}".format(db.db_stat()))
+    self_play(100000, model, db)

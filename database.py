@@ -97,6 +97,19 @@ class TextDb(object):
     def games(self):
         return self._games
 
+    def db_stat(self):
+        black_wins = 0
+        ties = 0
+        white_wins = 0
+        for _, result in self._games:
+            if result > 0:
+                black_wins += 1
+            elif result < 0:
+                white_wins += 1
+            else:
+                ties += 1
+        return (black_wins, white_wins, ties)
+
     def _mirror_move(self, m, d1, d2):
         r,c = mirror(m[1], m[2], d1, d2)
         return m[0],r,c
@@ -108,7 +121,6 @@ class TextDb(object):
 
     def add_file(self, file_name):
         self._games.extend(self._read_text_file(file_name))
-        print "#games = ", len(self._games)
 
     def _read_text_file(self, file_name):
         games = []

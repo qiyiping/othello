@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import collections
 
 def epsilon_greedy(epsilon, options, vals, max_player=True):
     r = np.random.rand()
@@ -12,6 +13,33 @@ def epsilon_greedy(epsilon, options, vals, max_player=True):
     else:
         idx = np.random.randint(low=0, high=len(options))
     return options[idx], vals[idx]
+
+class LRUCache(object):
+    def __init__(self, capacity):
+        self._cache = collections.OrderedDict()
+        self._capacity = capacity
+
+    def contains(self, key):
+        return key in self._cache
+
+    def size(self):
+        return len(self._cache)
+
+    def get(self, key, default_val = None):
+        try:
+            v = self._cache.pop(key)
+            self._cache[key] = v
+        except:
+            v = default_val
+        return v
+
+    def put(self, key, value):
+        try:
+            self._cache.pop(key)
+        except:
+            if len(self._cache) > self._capacity:
+                self._cache.popitem(last=False)
+        self._cache[key] = value
 
 class Hash(object):
     def __init__(self, positions=64, pieces=2, filename=None):

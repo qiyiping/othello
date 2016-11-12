@@ -3,7 +3,7 @@ import numpy as np
 from contextlib import contextmanager
 import sys
 import traceback
-from util import Hash
+from util import Hash, LRUCache
 
 class Board(object):
     BLANK = 0
@@ -24,8 +24,8 @@ class Board(object):
         assert size % 2 == 0
         self._size = size
         self.init_board()
-        self._feasible_pos_cache = {}
-        self._board_state_cache = {}
+        self._feasible_pos_cache = LRUCache(200000)
+        self._board_state_cache = LRUCache(2500000)
         self._hash = Hash()
 
     def init_board(self):
@@ -37,13 +37,13 @@ class Board(object):
         self._board[i][i-1] = Board.BLACK
 
     def cache_status(self):
-        return "position cache: {}, state cache: {}".format(len(self._feasible_pos_cache),
-                                                            len(self._board_state_cache))
+        return "position cache: {}, state cache: {}".format(self._feasible_pos_cache.size(),
+                                                            self._board_state_cache.size())
 
     def feasible_pos(self, player, enable_cache=True):
         h = self._hash(self._board) + player
-        if enable_cache and (h in self._feasible_pos_cache):
-            return self._feasible_pos_cache[h]
+        if enable_cache and self._feasible_pos_cache.contains(h):
+            return self._feasible_pos_cache.get(h)
 
         pos = []
         xs, ys = np.where(self._board == Board.BLANK)
@@ -51,13 +51,13 @@ class Board(object):
             if self.is_feasible(i, j, player):
                 pos.append((i, j))
 
-        self._feasible_pos_cache[h] = pos
+        self._feasible_pos_cache.put(h, pos)
         return pos
 
     def is_terminal_state(self):
         h = self._hash(self._board)
-        if h in self._board_state_cache:
-            return self._board_state_cache[h]
+        if self._board_state_cache.contains(h):
+            return self._board_state_cache.get(h)
 
         xs, ys = np.where(self._board == Board.BLANK)
         for i,j in zip(xs, ys):
@@ -76,10 +76,10 @@ class Board(object):
                     else:
                         black = True
                     if black and white:
-                        self._board_state_cache[h] = False
+                        self._board_state_cache.put(h, False)
                         return False
 
-        self._board_state_cache[h] = True
+        self._board_state_cache.put(h, True)
         return True
 
     def flip(self, i, j, player):

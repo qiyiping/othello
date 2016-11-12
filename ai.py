@@ -98,26 +98,26 @@ class Agent(object):
     def role(self, value):
         self._role = value
 
-class SimpleBot(Agent):
-    def __init__(self, evaluator, depth, role):
-        super(SimpleBot, self).__init__(role)
-        self._one_step_searcher = AlphaBeta(evaluator, 1)
+class Bot(Agent):
+    def __init__(self, evaluator, depth, final_depth, role):
+        super(Bot, self).__init__(role)
+        self._default_searcher = AlphaBeta(evaluator, depth)
         score_evaluator = ScoreEvaluator(role)
-        self._final_searcher = AlphaBeta(score_evaluator, depth)
-        self._depth = depth
+        self._final_searcher = AlphaBeta(score_evaluator, final_depth)
+        self._final_depth = final_depth
 
     def play(self, board):
-        if board.blanks <= self._depth:
+        if board.blanks <= self._final_depth:
             _, action = self._final_searcher.search(board, self.role)
         else:
-            _, action = self._one_step_searcher.search(board, self.role)
+            _, action = self._default_searcher.search(board, self.role)
         return action
 
 
 
-class CmdLineHumanPlayer(Agent):
+class HumanPlayer(Agent):
     def __init__(self, role):
-        super(CmdLineHumanPlayer, self).__init__(role)
+        super(HumanPlayer, self).__init__(role)
 
     def play(self, board):
         pos = board.feasible_pos(self.role)

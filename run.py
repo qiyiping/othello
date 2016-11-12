@@ -3,47 +3,20 @@ import numpy as np
 import ConfigParser
 
 from othello import Board, Game
-from ai import CmdLineHumanPlayer, SimpleBot
-from value import ModelScorer
+from ai import HumanPlayer, Bot
+from value import ModelScorer, NaiveScorer
 import time
-
-class SimpleEvaluator(object):
-    def __init__(self, role):
-        w = np.ones((8,8))*-1
-        w[0][0] = 100
-        w[0][1] = -20
-        w[0][2] = 10
-        w[0][3] = 5
-        w[0][4] = 5
-        w[0][5] = 10
-        w[0][6] = -20
-        w[0][7] = 100
-        w[1][0] = -20
-        w[1][1] = -50
-        w[1][2] = -2
-        w[1][3] = -2
-        w[1][4] = -2
-        w[1][5] = -2
-        w[1][6] = -50
-        w[1][7] = -20
-        w.T[0:2] = w[0:2]
-        w[6] = w[1]
-        w[7] = w[0]
-        w.T[6:8] = w[6:8]
-        self._w = w
-        self._role = role
-
-    def __call__(self, board):
-        return np.sum(self._w * (board.board == self._role))
 
 def tell_game_stat(game):
     b,w,t = game.game_stat()
     num_of_games = b + w + t
-    print "total games: {0}, black wins: {1} {2}, white wins: {3} {4}, ties: {5}".format(num_of_games,
-                                                                                         b,
-                                                                                         1.*b/num_of_games,
-                                                                                         w,
-                                                                                         1.*w/num_of_games, t)
+    info_template = "total games: {}, black wins: {} {}, white wins: {} {}, ties: {}"
+    print info_template.format(num_of_games,
+                               b,
+                               1.*b/num_of_games,
+                               w,
+                               1.*w/num_of_games,
+                               t)
 
 class Config(object):
     def __init__(self, filename):
@@ -88,18 +61,19 @@ def load_player(role, player_config):
         section = "White"
 
     player_type = player_config.get_as_str(section, "type")
-    if player_type == "SimpleBot":
+    if player_type == "Bot":
         evaluator_type = player_config.get_as_str(section, "evaluator")
         model = player_config.get_as_str(section, "model")
-        if evaluator_type == "simple":
-            evaluator = SimpleEvaluator(role)
-        else:
+        if evaluator_type == "Naive":
+            evaluator = NaiveScorer(role)
+        elif evaluator_type == "Model":
             evaluator = ModelScorer()
             evaluator.load(model)
-        depth = player_config.get_as_int(section, "depth", 3)
-        player = SimpleBot(evaluator, depth, role)
-    elif player_type == "HumanCmdLine":
-        player = CmdLineHumanPlayer(role)
+        depth = player_config.get_as_int(section, "depth", 1)
+        final_depth = player_config.get_as_int(section, "final_depth", 3)
+        player = Bot(evaluator, depth, final_depth, role)
+    elif player_type == "Human":
+        player = HumanPlayer(role)
     else:
         raise Exception("Unknown player type:{0}".format(player_type))
     return player
