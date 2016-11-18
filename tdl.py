@@ -48,7 +48,7 @@ def self_play(n, model, db):
 if __name__ == '__main__':
     logging.basicConfig(filename='tdl.log',level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 
-    model = ModelScorer()
+    model = ModelScorer(alpha=0.001, gamma=0.05)
 
     validate_db = TextDb("./database/validate.small.txt")
     logging.info("Validate database state: {}".format(validate_db.db_stat()))

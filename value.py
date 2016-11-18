@@ -37,7 +37,7 @@ def _m7(r, c):
 _m = [ _m0, _m1, _m2, _m3, _m4, _m5, _m6, _m7 ]
 
 class ModelScorer(BaseModelScorer):
-    def __init__(self, path=None):
+    def __init__(self, path=None, alpha=0.01, gamma=0.001):
         directions = [(0, 1), [1, 1]]
         corners = []
         num_of_weights = 0
@@ -57,8 +57,16 @@ class ModelScorer(BaseModelScorer):
         self._weights = np.zeros(num_of_weights * 9)
         self._patterns = zip(directions, corners)
 
+        self._alpha = alpha
+        self._gamma = gamma
+
         self._hash = Hash()
         self._feature_cache = LRUCache(300000)
+
+        self._update_count = 0
+        self._squared_gradient = np.zeros(num_of_weights * 9)
+        self._gradient_decay = 0.9
+        self._epsilon = 0.1
 
         if path is not None:
             self.load(path)
@@ -82,16 +90,25 @@ class ModelScorer(BaseModelScorer):
         return feature
 
     def __call__(self, board):
-        return np.inner(self._feature_extract(board.board), self._weights)
+        feature = self._feature_extract(board.board)
+        v = np.inner(feature, self._weights)
+        assert not (np.isnan(v) or np.isinf(v)), "\n{}\n{}".format(feature, self._weights)
+        return v
 
     def _value(self, feature):
-        return np.inner(self._weights, feature)
+        v = np.inner(feature, self._weights)
+        assert not (np.isnan(v) or np.isinf(v)), "\n{}\n{}".format(feature, self._weights)
+        return v
 
     def update(self, board, y):
-        f = self._feature_extract(board.board)
-        self._weights += (0.001 * (y - self._value(f)) * f)
-        assert np.nan not in self._weights, "\n{}\n{}\n{}".format(self._weights, f, y)
-        assert np.nan not in f, "\n{}\n{}\n{}".format(self._weights, f, y)
+        feature = self._feature_extract(board.board)
+        predict = self._value(feature)
+        gradient = (predict - y) * feature + self._gamma * self._weights
+        self._weights -= (self._alpha * gradient)
+        # self._squared_gradient = self._gradient_decay * self._squared_gradient + (1.0-self._gradient_decay) * gradient * gradient
+        # self._weights -= (self._alpha * gradient / np.sqrt(np.self._gradient_decay + self._epsilon))
+        self._update_count += 1
+        assert not (np.isnan(self._weights).any() or np.isinf(self._weights).any()), "\n{}\n{}\n{}\n{}".format(y, predict, gradient, self._update_count)
 
     def load(self, path):
         self._weights = np.load(path)
