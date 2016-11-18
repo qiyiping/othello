@@ -8,7 +8,7 @@ from util import Hash, LRUCache
 class Board(object):
     BLANK = 0
     BLACK = 1
-    WHITE = -1
+    WHITE = 2
     DIRECTIONS = [(1, 0), (-1, 0),
                   (0, 1), (0, -1),
                   (1, 1), (-1, -1),
@@ -98,7 +98,7 @@ class Board(object):
                         self._board[i+di*x][j+dj*x] = player
                         cnt += 1
                     break
-        assert cnt > 0
+        assert cnt > 0, "\n{}\n{}\n{}".format(self._board, (i,j), player)
         self._board[i][j] = player
 
     @contextmanager

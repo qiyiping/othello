@@ -60,7 +60,6 @@ class Hash(object):
         flatten_board = board.flatten()
         h = 0
         for i,v in enumerate(flatten_board):
-            # FIXME: It depends on the way piece value is defined.
             if v != 0:
-                h ^= self._table[i][(v+1)/2]
+                h ^= self._table[i][v-1]
         return h

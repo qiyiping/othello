@@ -26,8 +26,8 @@ def self_play(n, model, db):
                         else:
                             vals.append(model(b))
                 (a0, a1), v = epsilon_greedy(0.03, options, vals, p == Board.BLACK)
+                model.update(b, v)
                 b.flip(a0, a1, p)
-                model.update(b.board, [v])
 
             p = Board.opponent(p)
 
@@ -47,8 +47,10 @@ def self_play(n, model, db):
 
 if __name__ == '__main__':
     logging.basicConfig(filename='tdl.log',level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
+
     model = ModelScorer()
-    model.load("./model/model.cpt-14")
-    db = TextDb("./database/logbook.small.txt")
-    logging.info("Database state: {}".format(db.db_stat()))
-    self_play(100000, model, db)
+
+    validate_db = TextDb("./database/validate.small.txt")
+    logging.info("Validate database state: {}".format(validate_db.db_stat()))
+
+    self_play(100000, model, validate_db)

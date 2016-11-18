@@ -13,7 +13,7 @@ def evaluate(db, model):
     n = 0.0
     for d1,d2 in directions:
         for moves, result in db.xgames(d1, d2):
-            if np.random.rand() > 0.05:
+            if np.random.rand() > 0.1:
                 continue
             b = Board()
             for p, r, c in moves:
@@ -24,7 +24,7 @@ def evaluate(db, model):
 
 if __name__ == '__main__':
     model = ModelScorer()
-    model.load("/Users/qiyiping/Projects/qiyiping/othello/model/model.cpt-3")
-    db = TextDb("./database/WTH.txt")
+    model.load("/Users/qiyiping/Projects/qiyiping/othello/model/model.cpt.npy")
+    db = TextDb("./database/validate.small.txt")
     n, mse = evaluate(db, model)
     print "Number of Games:{}, MSE: {}".format(n, mse)
