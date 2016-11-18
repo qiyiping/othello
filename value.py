@@ -82,6 +82,7 @@ class ModelScorer(BaseModelScorer):
     def update(self, board, y):
         f = self._feature_extract(board.board)
         self._weights += 0.01 * (y - self._value(f)) * f
+        assert np.nan not in self._weights, "\n{}\n{}\n{}".format(self._weights, f, y)
 
     def load(self, path):
         self._weights = np.load(path)
