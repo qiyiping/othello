@@ -54,7 +54,7 @@ class ModelScorer(BaseModelScorer):
             corners.append(pt)
             num_of_weights += len(pt)
 
-        self._weights = np.random.randn(num_of_weights * 9)
+        self._weights = np.zeros(num_of_weights * 9)
         self._patterns = zip(directions, corners)
 
         self._hash = Hash()
