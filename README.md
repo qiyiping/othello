@@ -5,6 +5,7 @@ This is simple application that learn playing Othello by
 *reinforcement learning*.
 
 TD(0) is used to evaluate a policy.
+
 Value approximation function is based on *n-tuple network* introduced
 in Wojciech's paper.
 
