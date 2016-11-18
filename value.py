@@ -37,7 +37,7 @@ def _m7(r, c):
 _m = [ _m0, _m1, _m2, _m3, _m4, _m5, _m6, _m7 ]
 
 class ModelScorer(BaseModelScorer):
-    def __init__(self, path=None, alpha=0.01, gamma=0.001):
+    def __init__(self, path=None, alpha=0.01, gamma=0.001, optimizer="sgd"):
         directions = [(0, 1), [1, 1]]
         corners = []
         num_of_weights = 0
@@ -68,6 +68,8 @@ class ModelScorer(BaseModelScorer):
         self._gradient_decay = 0.9
         self._epsilon = 0.1
 
+        self._optimizer = optimizer
+
         if path is not None:
             self.load(path)
 
@@ -97,18 +99,20 @@ class ModelScorer(BaseModelScorer):
 
     def _value(self, feature):
         v = np.inner(feature, self._weights)
-        assert not (np.isnan(v) or np.isinf(v)), "\n{}\n{}".format(feature, self._weights)
+        # assert not (np.isnan(v) or np.isinf(v)), "\n{}\n{}".format(feature, self._weights)
         return v
 
     def update(self, board, y):
         feature = self._feature_extract(board.board)
         predict = self._value(feature)
         gradient = (predict - y) * feature + self._gamma * self._weights
-        self._weights -= (self._alpha * gradient)
-        # self._squared_gradient = self._gradient_decay * self._squared_gradient + (1.0-self._gradient_decay) * gradient * gradient
-        # self._weights -= (self._alpha * gradient / np.sqrt(np.self._gradient_decay + self._epsilon))
+        if self._optimizer == "sgd":
+            self._weights -= (self._alpha * gradient)
+        elif self._optimizer == "adadelta":
+            self._squared_gradient = self._gradient_decay * self._squared_gradient + (1.0-self._gradient_decay) * gradient * gradient
+            self._weights -= (self._alpha * gradient / np.sqrt(self._gradient_decay + self._epsilon))
         self._update_count += 1
-        assert not (np.isnan(self._weights).any() or np.isinf(self._weights).any()), "\n{}\n{}\n{}\n{}".format(y, predict, gradient, self._update_count)
+        # assert not (np.isnan(self._weights).any() or np.isinf(self._weights).any()), "\n{}\n{}\n{}\n{}".format(y, predict, gradient, self._update_count)
 
     def load(self, path):
         self._weights = np.load(path)
