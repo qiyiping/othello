@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from othello import Board
+from util import Hash, LRUCache
 import numpy as np
 
 class BaseModelScorer(object):
@@ -56,10 +57,16 @@ class ModelScorer(BaseModelScorer):
         self._weights = np.random.randn(num_of_weights * 9)
         self._patterns = zip(directions, corners)
 
+        self._hash = Hash()
+        self._feature_cache = LRUCache(300000)
+
         if path is not None:
             self.load(path)
 
     def _feature_extract(self, b):
+        h = self._hash(b)
+        if self._feature_cache.contains(h):
+            return self._feature_cache.get(h)
         feature = np.zeros(len(self._weights))
         idx = 0
         for (x, y), corners in self._patterns:
@@ -71,6 +78,7 @@ class ModelScorer(BaseModelScorer):
                     v1 = b[r1][c1]
                     feature[v0*3 + v1 + idx * 9] += 1.0
                 idx += 1
+        self._feature_cache.put(h, feature)
         return feature
 
     def __call__(self, board):
@@ -81,8 +89,9 @@ class ModelScorer(BaseModelScorer):
 
     def update(self, board, y):
         f = self._feature_extract(board.board)
-        self._weights += 0.01 * (y - self._value(f)) * f
+        self._weights += (0.001 * (y - self._value(f)) * f)
         assert np.nan not in self._weights, "\n{}\n{}\n{}".format(self._weights, f, y)
+        assert np.nan not in f, "\n{}\n{}\n{}".format(self._weights, f, y)
 
     def load(self, path):
         self._weights = np.load(path)

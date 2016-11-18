@@ -24,7 +24,7 @@ class Board(object):
         assert size % 2 == 0
         self._size = size
         self.init_board()
-        self._feasible_pos_cache = LRUCache(200000)
+        self._feasible_pos_cache = LRUCache(500000)
         self._board_state_cache = LRUCache(2500000)
         self._hash = Hash()
 
