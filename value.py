@@ -38,7 +38,7 @@ _m = [ _m0, _m1, _m2, _m3, _m4, _m5, _m6, _m7 ]
 
 class ModelScorer(BaseModelScorer):
     def __init__(self, path=None, alpha=0.01, gamma=0.001, optimizer="sgd"):
-        directions = [(0, 1), [1, 1]]
+        directions = [(0, 1), (1, 1)]
         corners = []
         num_of_weights = 0
         s = set()
