@@ -5,10 +5,8 @@ import logging
 from othello import Board
 from util import epsilon_greedy
 from value import ModelScorer
-from evaluation import evaluate
-from database import TextDb
 
-def self_play(n, model, db):
+def self_play(n, model):
     b = Board()
     for t in xrange(1, n+1):
         b.init_board()
@@ -38,10 +36,6 @@ def self_play(n, model, db):
         if t % 1000 == 0:
             model.save("./model/model.cpt")
 
-        if t % 5000 == 0:
-            n, mse = evaluate(db, model)
-            logging.info("Number of Games:{}, MSE: {}".format(n, mse))
-
     model.save("./model/model.cpt")
 
 
@@ -50,7 +44,4 @@ if __name__ == '__main__':
 
     model = ModelScorer(alpha=0.001, gamma=0.05)
 
-    validate_db = TextDb("./database/validate.small.txt")
-    logging.info("Validate database state: {}".format(validate_db.db_stat()))
-
-    self_play(100000, model, validate_db)
+    self_play(100000, model)
