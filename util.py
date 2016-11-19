@@ -3,6 +3,8 @@
 import numpy as np
 import collections
 
+import ConfigParser
+
 def epsilon_greedy(epsilon, options, vals, max_player=True):
     r = np.random.rand()
     if r < 1 - epsilon:
@@ -63,3 +65,40 @@ class Hash(object):
             if v != 0:
                 h ^= self._table[i][v-1]
         return h
+
+
+class Config(object):
+    def __init__(self, filename):
+        self._config = ConfigParser.ConfigParser()
+        self._config.read(filename)
+
+    def print_config(self):
+        sections = self._config.sections()
+        for s in sections:
+            print s
+            for k,v in self._config.items(s):
+                print "\t", k, v
+
+    def get_as_str(self, section, option, default=None):
+        try:
+            return self._config.get(section, option)
+        except:
+            return default
+
+    def get_as_int(self, section, option, default=None):
+        try:
+            return self._config.getint(section, option)
+        except:
+            return default
+
+    def get_as_float(self, section, option, default=None):
+        try:
+            return self._config.getfloat(section, option)
+        except:
+            return default
+
+    def get_as_boolean(self, section, option, default=None):
+        try:
+            return self._config.getboolean(section, option)
+        except:
+            return default

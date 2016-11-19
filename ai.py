@@ -3,10 +3,9 @@
 import numpy as np
 
 from othello import Board
-from util import Hash
+from value import ScorerWrapper, CountScorer
 
 import sys
-import logging
 
 class AlphaBeta(object):
     MAX_VAL = float("inf")
@@ -70,13 +69,6 @@ class AlphaBeta(object):
                                            depth, not is_maximizing_player)
         return r, act
 
-
-class ScoreEvaluator(object):
-    def __init__(self, role):
-        self._role = role
-    def __call__(self, board):
-        return board.score(self._role)
-
 class Agent(object):
     def __init__(self, role):
         self._role = role
@@ -101,9 +93,10 @@ class Agent(object):
 class Bot(Agent):
     def __init__(self, evaluator, depth, final_depth, role):
         super(Bot, self).__init__(role)
-        self._default_searcher = AlphaBeta(evaluator, depth)
-        score_evaluator = ScoreEvaluator(role)
-        self._final_searcher = AlphaBeta(score_evaluator, final_depth)
+        self._default_searcher = AlphaBeta(ScorerWrapper(role, evaluator),
+                                           depth)
+        self._final_searcher = AlphaBeta(ScorerWrapper(role, CountScorer()),
+                                         final_depth)
         self._final_depth = final_depth
 
     def play(self, board):

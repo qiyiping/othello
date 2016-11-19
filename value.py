@@ -3,7 +3,7 @@ from othello import Board
 from util import Hash, LRUCache
 import numpy as np
 
-class BaseModelScorer(object):
+class Scorer(object):
     def __call__(self, board):
         return 0.0
 
@@ -36,7 +36,7 @@ def _m7(r, c):
 
 _m = [ _m0, _m1, _m2, _m3, _m4, _m5, _m6, _m7 ]
 
-class ModelScorer(BaseModelScorer):
+class ModelScorer(Scorer):
     def __init__(self, path=None, alpha=0.01, gamma=0.001, optimizer="sgd"):
         directions = [(0, 1), (1, 1)]
         corners = []
@@ -120,8 +120,8 @@ class ModelScorer(BaseModelScorer):
     def save(self, path):
         np.save(path, self._weights)
 
-class NaiveScorer(object):
-    def __init__(self, role):
+class NaiveScorer(Scorer):
+    def __init__(self):
         w = np.ones((8,8))*-1
         w[0][0] = 100
         w[0][1] = -20
@@ -144,7 +144,23 @@ class NaiveScorer(object):
         w[7] = w[0]
         w.T[6:8] = w[6:8]
         self._w = w
-        self._role = role
 
     def __call__(self, board):
-        return np.sum(self._w * (board.board == self._role))
+        return np.sum(self._w * (board.board == Board.BLACK))
+
+class CountScorer(Scorer):
+    def __call__(self, board):
+        return board.score(Board.BLACK)
+
+
+class ScorerWrapper(Scorer):
+    def __init__(self, role, scorer):
+        self._role = role
+        self._scorer = scorer
+
+    def __call__(self, board):
+        val = self._scorer(board)
+        if self._role == Board.BLACK:
+            return val
+        else:
+            return -val
