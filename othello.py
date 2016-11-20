@@ -36,6 +36,9 @@ class Board(object):
         self._board[i][i] = Board.WHITE
         self._board[i][i-1] = Board.BLACK
 
+    def set_board(self, board):
+        self._board = np.array(board, dtype=np.int)
+
     def cache_status(self):
         return "position cache: {}, state cache: {}".format(self._feasible_pos_cache.size(),
                                                             self._board_state_cache.size())
