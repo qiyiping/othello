@@ -11,7 +11,7 @@ from value import ModelScorer, ScorerWrapper
 from ai import Bot
 
 board = Board()
-model_file = "../model/model.cpt.npy.2"
+model_file = "../model/model.cpt.npy.3"
 scorer = ModelScorer(model_file)
 black_bot = Bot(scorer, 4, 7, Board.BLACK)
 white_bot = Bot(scorer, 4, 7, Board.WHITE)
@@ -76,4 +76,4 @@ def play():
     return jsonify(**ret)
 
 if __name__ == '__main__':
-    app.run(host="localhost", port=9199, debug=True)
+    app.run(host="0.0.0.0", port=9199, passthrough_errors=True)
