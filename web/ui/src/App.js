@@ -21,7 +21,7 @@ class Board extends Component {
                   "aiPlayer": "white",
                   "turn":"black"};
 
-    this.boardSize = 400;
+    this.boardSize = 320;
     this.gridSize = this.boardSize/8;
 
     this.newGame = this.newGame.bind(this);
