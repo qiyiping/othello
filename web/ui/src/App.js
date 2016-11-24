@@ -50,6 +50,7 @@ class Board extends Component {
       return response.json();
     }).then(js => {
       js["gameStarted"] = true;
+      js["action"] = "";
       this.setState(js);
     });
   }
@@ -68,6 +69,24 @@ class Board extends Component {
     this.drawBoard(ctx);
     this.drawPieces(ctx);
     this.drawOptions(ctx);
+    this.drawAction(ctx);
+  }
+
+  drawAction(ctx) {
+    if ("action" in this.state && this.state.action !== "") {
+      var p = this.state.action;
+      var r = p[0];
+      var c = p[1];
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc((c+0.5) * this.gridSize, (r+0.5) * this.gridSize, this.gridSize/2-1, 0, Math.PI * 2, false);
+      ctx.closePath();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "yellow";
+      ctx.setLineDash([5, 3]);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   drawSinglePiece(ctx, r, c, piece) {
