@@ -2,6 +2,16 @@ import React, { Component } from 'react';
 // import logo from './logo.svg';
 // import './App.css';
 
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
+
 class Board extends Component {
   constructor() {
     super();
@@ -21,7 +31,7 @@ class Board extends Component {
                   "aiPlayer": "white",
                   "turn":"black"};
 
-    this.boardSize = 320;
+    this.boardSize = 480;
     this.gridSize = this.boardSize/8;
 
     this.newGame = this.newGame.bind(this);
@@ -51,6 +61,7 @@ class Board extends Component {
     }).then(js => {
       js["gameStarted"] = true;
       js["action"] = "";
+      js["gameId"] = guid();
       this.setState(js);
     });
   }
@@ -191,12 +202,14 @@ class Board extends Component {
         formData.append("data", JSON.stringify({
           player: this.state.turn,
           action: props["action"],
-          board: this.state.board
+          board: this.state.board,
+          gameId: this.state.gameId
         }));
       } else {
         formData.append("data", JSON.stringify({
           player: this.state.turn,
-          board: this.state.board
+          board: this.state.board,
+          gameId: this.state.gameId
         }));
       }
 
@@ -214,7 +227,7 @@ class Board extends Component {
   render() {
     return (
       <div>
-        <select onChange={this.changePlayer}>
+        <select onChange={this.changePlayer} disabled>
           <option value="black">Black</option>
           <option value="white">White</option>
         </select>

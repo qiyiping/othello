@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+import logging.handlers
 import sys
 sys.path.append("../")
 
@@ -54,6 +56,10 @@ def play():
     else:
         r, c = player.play(board)
 
+    logmsg = "{} {}: ({},{})\n{}".format(data["gameId"], data["player"], r, c, board.board)
+    print logmsg
+    app.logger.info(logmsg)
+
     board.flip(r, c, role)
 
     next_role, next_role_name = _opponent(role)
@@ -76,4 +82,9 @@ def play():
     return jsonify(**ret)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=9199, passthrough_errors=True)
+    handler = logging.handlers.RotatingFileHandler('./play.log', maxBytes=100*1024*1024, backupCount=3)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.DEBUG)
+    app.logger.addHandler(handler)
+    app.run(host="0.0.0.0", port=9199, passthrough_errors=False, debug=False)
