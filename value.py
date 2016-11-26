@@ -136,7 +136,7 @@ class ModelScorer(Scorer):
         if w.ndim == 2:
             self._weights = w
         else:
-            self._weights = np.repeat(w.reshape([1, c]), c, axis=0)
+            self._weights = np.repeat(w.reshape([1, c]), r, axis=0)
         assert r,c == self._weights.shape
 
     def save(self, path):
