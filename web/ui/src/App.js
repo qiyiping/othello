@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-// import logo from './logo.svg';
-// import './App.css';
+import logo from './logo.svg';
+import './App.css';
 
 function guid() {
   function s4() {
@@ -12,27 +12,55 @@ function guid() {
     s4() + '-' + s4() + s4() + s4();
 }
 
+String.prototype.format = function() {
+    var s = this,
+        i = arguments.length;
+
+    while (i--) {
+        s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arguments[i]);
+    }
+    return s;
+};
+
+function PlayRecordRow(props) {
+  return (
+    <div>
+      {props.player} : {props.action[0] + 1}, {props.action[1] + 1}
+    </div>
+  );
+}
+
 class Board extends Component {
   constructor() {
     super();
-    this.state = {"board":[[0,0,0,0,0,0,0,0],
-                           [0,0,0,0,0,0,0,0],
-                           [0,0,0,0,0,0,0,0],
-                           [0,0,0,2,1,0,0,0],
-                           [0,0,0,1,2,0,0,0],
-                           [0,0,0,0,0,0,0,0],
-                           [0,0,0,0,0,0,0,0],
-                           [0,0,0,0,0,0,0,0]],
-                  "options":[[2,3],[3,2],[4,5],[5,4]],
-                  "blackScore": 2,
-                  "whiteScore": 2,
-                  "gameStarted": false,
-                  "humanPlayer": "black",
-                  "aiPlayer": "white",
-                  "turn":"black"};
+    this.state = {
+      board: [
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 2, 1, 0, 0, 0],
+        [0, 0, 0, 1, 2, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0]
+      ],
+      steps: [],
+      options: [
+        [2, 3],
+        [3, 2],
+        [4, 5],
+        [5, 4]
+      ],
+      blackScore: 2,
+      whiteScore: 2,
+      gameStarted: false,
+      humanPlayer: "black",
+      aiPlayer: "white",
+      turn: "black"
+    };
 
     this.boardSize = 480;
-    this.gridSize = this.boardSize/8;
+    this.gridSize = this.boardSize / 8;
 
     this.newGame = this.newGame.bind(this);
     this.handleClick = this.handleClick.bind(this);
@@ -41,9 +69,9 @@ class Board extends Component {
 
   changePlayer(e) {
     this.setState({
-      "humanPlayer": e.target.value,
-      "aiPlayer": this.opponent(e.target.value),
-      "turn": e.target.value
+      humanPlayer: e.target.value,
+      aiPlayer: this.opponent(e.target.value),
+      turn: "black"
     });
   }
 
@@ -59,9 +87,10 @@ class Board extends Component {
     fetch("/othello/new").then(response => {
       return response.json();
     }).then(js => {
-      js["gameStarted"] = true;
-      js["action"] = "";
-      js["gameId"] = guid();
+      js.gameStarted = true;
+      js.action = "";
+      js.gameId = guid();
+      js.steps = [];
       this.setState(js);
     });
   }
@@ -90,7 +119,7 @@ class Board extends Component {
       var c = p[1];
       ctx.save();
       ctx.beginPath();
-      ctx.arc((c+0.5) * this.gridSize, (r+0.5) * this.gridSize, this.gridSize/2-1, 0, Math.PI * 2, false);
+      ctx.arc((c + 0.5) * this.gridSize, (r + 0.5) * this.gridSize, this.gridSize / 2 - 1, 0, Math.PI * 2, false);
       ctx.closePath();
       ctx.lineWidth = 1;
       ctx.strokeStyle = "yellow";
@@ -111,7 +140,7 @@ class Board extends Component {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.beginPath();
-    ctx.arc((c+0.5) * this.gridSize, (r+0.5) * this.gridSize, this.gridSize/2-3, 0, Math.PI * 2, false);
+    ctx.arc((c + 0.5) * this.gridSize, (r + 0.5) * this.gridSize, this.gridSize / 2 - 3, 0, Math.PI * 2, false);
     ctx.closePath();
     ctx.fillStyle = style;
     ctx.strokeStyle = style;
@@ -120,15 +149,15 @@ class Board extends Component {
   }
 
   drawOptions(ctx) {
-    for(var i = 0; i < this.state.options.length; i++) {
+    for (var i = 0; i < this.state.options.length; i++) {
       var p = this.state.options[i];
       this.drawSinglePiece(ctx, p[0], p[1], 0);
     }
   }
 
   drawPieces(ctx) {
-    for(var i = 0; i < 8; i++) {
-      for(var j = 0; j < 8; j++) {
+    for (var i = 0; i < 8; i++) {
+      for (var j = 0; j < 8; j++) {
         var piece = this.state.board[i][j];
         if (piece !== 0) {
           this.drawSinglePiece(ctx, i, j, piece);
@@ -144,10 +173,10 @@ class Board extends Component {
     ctx.fillRect(0, 0, this.boardSize, this.boardSize);
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle="#111";
-    ctx.fillStye="#111";
+    ctx.strokeStyle = "#111";
+    ctx.fillStye = "#111";
     ctx.beginPath();
-    for(var i = 0; i <= 8; i++) {
+    for (var i = 0; i <= 8; i++) {
       ctx.moveTo(0, this.gridSize * i);
       ctx.lineTo(this.boardSize, this.gridSize * i);
       ctx.moveTo(this.gridSize * i, 0);
@@ -166,9 +195,12 @@ class Board extends Component {
 
   getClickPosition(e) {
     var rect = this.refs.board.getBoundingClientRect();
-    var c = parseInt((e.clientX-rect.left) / this.gridSize);
-    var r = parseInt((e.clientY-rect.top) / this.gridSize);
-    return {row: r, col: c};
+    var c = parseInt((e.clientX - rect.left) / this.gridSize);
+    var r = parseInt((e.clientY - rect.top) / this.gridSize);
+    return {
+      row: r,
+      col: c
+    };
   }
 
   handleClick(e) {
@@ -176,7 +208,7 @@ class Board extends Component {
     var c = pos.col;
     var r = pos.row;
     var validClick = false;
-    for(var i = 0; i < this.state.options.length; i++) {
+    for (var i = 0; i < this.state.options.length; i++) {
       var p = this.state.options[i];
       if (r === p[0] && c === p[1]) {
         validClick = true;
@@ -184,18 +216,14 @@ class Board extends Component {
       }
     }
 
-    // console.log("click position:", r, c,
-    //             " valid positon:", validClick,
-    //             " turn:", this.state.turn,
-    //             " human player:", this.state.humanPlayer);
-
     if (validClick && this.state.turn === this.state.humanPlayer) {
-      this.play({"action": [r, c]});
+      this.play({
+        action: [r, c]
+      });
     }
   }
 
   play(props) {
-    // console.log(props, this.state.gameStarted);
     if (this.state.gameStarted) {
       var formData = new FormData();
       if ("action" in props) {
@@ -219,6 +247,11 @@ class Board extends Component {
       }).then(response => {
         return response.json();
       }).then(js => {
+        js.steps = JSON.parse(JSON.stringify(this.state.steps));
+        js.steps.push({
+          player: this.state.turn,
+          action: js.action
+        });
         this.setState(js);
       });
     }
@@ -226,16 +259,24 @@ class Board extends Component {
 
   render() {
     return (
-      <div>
-        <select onChange={this.changePlayer} disabled>
-          <option value="black">Black</option>
-          <option value="white">White</option>
-        </select>
-        <button onClick={this.newGame}>Start Game</button>
-        <br/>
-        Black Score: {this.state.blackScore}, White Score: {this.state.whiteScore}
-        <br/>
-        <canvas ref="board" width={this.boardSize} height={this.boardSize} onClick={this.handleClick}></canvas>
+      <div id="parent">
+        <div id="board">
+          <select onChange={this.changePlayer} disabled>
+            <option value="black">Black</option>
+            <option value="white">White</option>
+          </select>
+          <button onClick={this.newGame}>Start Game</button>
+          <br/>
+          Black Score: {this.state.blackScore}, White Score: {this.state.whiteScore}
+          <br/>
+          <canvas ref="board"
+                  width={this.boardSize}
+                  height={this.boardSize}
+                  onClick={this.handleClick}/>
+        </div>
+        <div id="steps">
+          {this.state.steps.map(s => <PlayRecordRow player={s.player} action={s.action}/>)}
+        </div>
       </div>
     );
   }
