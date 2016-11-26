@@ -62,7 +62,7 @@ class ModelScorer(Scorer):
         self._gamma = gamma
 
         self._hash = Hash()
-        self._feature_cache = LRUCache(300000)
+        self._feature_cache = LRUCache(900000)
 
         self._update_count = 0
         self._squared_gradient = np.zeros([self._num_of_stages(),

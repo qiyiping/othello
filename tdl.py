@@ -23,7 +23,7 @@ def self_play(n, model):
                             vals.append(b.score(Board.BLACK) - b.score(Board.WHITE))
                         else:
                             vals.append(model(b))
-                (a0, a1), v = epsilon_greedy(0.03, options, vals, p == Board.BLACK)
+                (a0, a1), v = epsilon_greedy(0.07, options, vals, p == Board.BLACK)
                 model.update(b, v)
                 b.flip(a0, a1, p)
 
@@ -42,6 +42,6 @@ def self_play(n, model):
 if __name__ == '__main__':
     logging.basicConfig(filename='tdl.log',level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 
-    model = ModelScorer(alpha=0.001, gamma=0.05)
+    model = ModelScorer(learning_rate=0.001, gamma=0.01)
 
-    self_play(100000, model)
+    self_play(700000, model)
