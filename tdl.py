@@ -43,5 +43,6 @@ if __name__ == '__main__':
     logging.basicConfig(filename='tdl.log',level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 
     model = ModelScorer(learning_rate=0.001, gamma=0.01)
+    model.load("./model/model.cpt.npy")
 
     self_play(700000, model)

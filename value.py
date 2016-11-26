@@ -85,7 +85,8 @@ class ModelScorer(Scorer):
         h = self._hash(b)
         if self._feature_cache.contains(h):
             return self._feature_cache.get(h)
-        feature = np.zeros(len(self._weights))
+        _, sz = self._weights.shape
+        feature = np.zeros(sz)
         idx = 0
         for (x, y), corners in self._patterns:
             for r, c in corners:
