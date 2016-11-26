@@ -140,15 +140,6 @@ class Board(object):
     def board(self):
         return self._board
 
-    # NUMBER_OF_STAGES = 11
-
-    # def stage(self):
-    #     return self.blanks // 6
-
-    # @classmethod
-    # def _stage(cls, bd):
-    #     return np.sum(bd == Board.BLANK) // 6
-
     @property
     def size(self):
         return self._size

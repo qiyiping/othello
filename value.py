@@ -37,7 +37,7 @@ def _m7(r, c):
 _m = [ _m0, _m1, _m2, _m3, _m4, _m5, _m6, _m7 ]
 
 class ModelScorer(Scorer):
-    def __init__(self, path=None, alpha=0.01, gamma=0.001, optimizer="sgd"):
+    def __init__(self, path=None, learning_rate=0.01, gamma=0.001, optimizer="sgd"):
         directions = [(0, 1), (1, 1)]
         corners = []
         num_of_weights = 0
@@ -54,17 +54,19 @@ class ModelScorer(Scorer):
             corners.append(pt)
             num_of_weights += len(pt)
 
-        self._weights = np.zeros(num_of_weights * 9)
+        self._weights = np.zeros([self._num_of_stages(),
+                                  num_of_weights * 9])
         self._patterns = zip(directions, corners)
 
-        self._alpha = alpha
+        self._learning_rate = learning_rate
         self._gamma = gamma
 
         self._hash = Hash()
         self._feature_cache = LRUCache(300000)
 
         self._update_count = 0
-        self._squared_gradient = np.zeros(num_of_weights * 9)
+        self._squared_gradient = np.zeros([self._num_of_stages(),
+                                           num_of_weights * 9])
         self._gradient_decay = 0.9
         self._epsilon = 0.1
 
@@ -72,6 +74,12 @@ class ModelScorer(Scorer):
 
         if path is not None:
             self.load(path)
+
+    def _stage(self, board):
+        return board.blanks // 9
+
+    def _num_of_stages(self):
+        return 60 // 9 + 1
 
     def _feature_extract(self, b):
         h = self._hash(b)
@@ -93,29 +101,42 @@ class ModelScorer(Scorer):
 
     def __call__(self, board):
         feature = self._feature_extract(board.board)
-        v = np.inner(feature, self._weights)
+        stage = self._stage(board)
+        w = self._weights[stage]
+        v = np.inner(feature, w)
         assert not (np.isnan(v) or np.isinf(v)), "\n{}\n{}".format(feature, self._weights)
         return v
 
-    def _value(self, feature):
-        v = np.inner(feature, self._weights)
-        # assert not (np.isnan(v) or np.isinf(v)), "\n{}\n{}".format(feature, self._weights)
+    def _value(self, feature, stage):
+        w = self._weights[stage]
+        v = np.inner(feature, w)
         return v
 
     def update(self, board, y):
         feature = self._feature_extract(board.board)
-        predict = self._value(feature)
-        gradient = (predict - y) * feature + self._gamma * self._weights
+        stage = self._stage(board)
+        predict = self._value(feature, stage)
+        w = self._weights[stage]
+        g = self._squared_gradient[stage]
+
+        gradient = (predict - y) * feature + self._gamma * w
         if self._optimizer == "sgd":
-            self._weights -= (self._alpha * gradient)
+            w -= (self._learning_rate * gradient)
         elif self._optimizer == "adadelta":
-            self._squared_gradient = self._gradient_decay * self._squared_gradient + (1.0-self._gradient_decay) * gradient * gradient
-            self._weights -= (self._alpha * gradient / np.sqrt(self._gradient_decay + self._epsilon))
+            np.add(self._gradient_decay * g,
+                   (1.0-self._gradient_decay) * gradient * gradient,
+                   g)
+            w -= (self._learning_rate * gradient / np.sqrt(g + self._epsilon))
         self._update_count += 1
-        # assert not (np.isnan(self._weights).any() or np.isinf(self._weights).any()), "\n{}\n{}\n{}\n{}".format(y, predict, gradient, self._update_count)
 
     def load(self, path):
-        self._weights = np.load(path)
+        w = np.load(path)
+        r,c = self._weights.shape
+        if w.ndim == 2:
+            self._weights = w
+        else:
+            self._weights = np.repeat(w.reshape([1, c]), c, axis=0)
+        assert r,c == self._weights.shape
 
     def save(self, path):
         np.save(path, self._weights)
