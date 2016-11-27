@@ -11,7 +11,7 @@ from value import ModelScorer, ScorerWrapper
 from ai import Bot
 
 board = Board()
-model_file = "../model/model.cpt.npy.4"
+model_file = "../model/model.cpt.npy.6"
 scorer = ModelScorer(model_file)
 black_bot = Bot(scorer, 4, 7, Board.BLACK)
 white_bot = Bot(scorer, 4, 7, Board.WHITE)
@@ -55,9 +55,9 @@ def play():
         r, c = player.play(board)
 
     app.logger.info("{} {} ({},{}) {}".format(data["gameId"],
-                                                data["player"],
-                                                r, c,
-                                                board.board.reshape(64)))
+                                              data["player"],
+                                              r, c,
+                                              ','.join(map(str, board.board.reshape(64)))))
 
     board.flip(r, c, role)
 
