@@ -102,6 +102,21 @@ class Board extends Component {
   componentDidUpdate() {
     this.updateCanvas();
     this.ai();
+    if (this.state.turn === "none") {
+      this.report();
+    }
+  }
+
+  report() {
+    var formData = new FormData();
+    formData.append("data", JSON.stringify({
+      steps: this.state.steps,
+      result: (this.state.blackScore - this.state.whiteScore)
+    }));
+    fetch("/othello/report", {
+      method: "post",
+      body: formData
+    });
   }
 
   updateCanvas() {

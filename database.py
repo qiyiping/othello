@@ -13,19 +13,6 @@ def _move_to_str(move):
         p = '-'
     return '{0}{1}{2}'.format(p,chr(ord('a') + column), row+1)
 
-def _mirror1(r, c):
-    return c,r
-
-def _mirror2(r, c, sz=8):
-    return sz-1-c, sz-1-r
-
-def mirror(r, c, d1, d2, sz=8):
-    if d1:
-        r,c = _mirror1(r,c)
-    if d2:
-        r,c = _mirror2(r,c,sz)
-    return r,c
-
 def save_db_as_text(db, output_file):
     with open(output_file, 'w') as f:
         for moves, result in db.games:
@@ -110,15 +97,6 @@ class TextDb(object):
                 ties += 1
         return (black_wins, white_wins, ties)
 
-    def _mirror_move(self, m, d1, d2):
-        r,c = mirror(m[1], m[2], d1, d2)
-        return m[0],r,c
-
-    def xgames(self, d1, d2):
-        for moves,result in self._games:
-            moves2 = map(lambda m: self._mirror_move(m,d1,d2), moves)
-            yield moves2,result
-
     def add_file(self, file_name):
         self._games.extend(self._read_text_file(file_name))
 
@@ -152,7 +130,7 @@ class TextDb(object):
 
 def validate(db):
     import random
-    for moves, result in db.xgames(True, False):
+    for moves, result in db.games:
         if random.random() < 0.9:
             continue
         b = Board()
@@ -167,7 +145,6 @@ def validate(db):
         assert result in (black_score-white_score, 2*score - 64)
 
 if __name__ == '__main__':
-    # database_files = ["./database/logbook.txt", "./database/WTH.txt"]
-    database_files = ["./database/logbook.txt"]
+    database_files = ["./database/train.small.txt"]
     db = TextDb(*database_files)
     validate(db)
