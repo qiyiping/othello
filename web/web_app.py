@@ -13,8 +13,8 @@ from ai import Bot
 board = Board()
 model_file = "../model/model.cpt.npy.6"
 scorer = ModelScorer(model_file)
-black_bot = Bot(scorer, 4, 7, Board.BLACK)
-white_bot = Bot(scorer, 4, 7, Board.WHITE)
+black_bot = Bot(scorer, 4, 10, Board.BLACK)
+white_bot = Bot(scorer, 4, 10, Board.WHITE)
 
 role_mapping = { "black": (black_bot, Board.BLACK), "white": (white_bot, Board.WHITE) }
 
@@ -84,21 +84,16 @@ def play():
 def report():
     data = json.loads(request.form["data"])
     moves = []
-    b = Board()
     for step in data["steps"]:
         player = step["player"]
         action = step["action"]
         if player == "black":
             moves.append('+')
-            b.flip(action[0], action[1], Board.BLACK)
         else:
             moves.append('-')
-            b.flip(action[0], action[1], Board.WHITE)
         moves.append(chr(action[0] + ord('a')))
         moves.append(action[1] + 1)
     moves.append(':')
-    result = b.score(Board.BLACK) - b.score(Board.WHITE)
-    assert result == int(data["result"])
     moves.append(data["result"])
     app.logger.info("report = {}".format(''.join(map(str, moves))))
     return jsonify({"status": "OK"})
