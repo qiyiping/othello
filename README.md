@@ -17,9 +17,9 @@ Edit `config/config.ini` to setup players and run `python run.py` to
 play Othello in command line.
 
 Or you can try the simple web app:
-  * Run *npm install && npm run build* in `web/ui`.
-  * Install `gevent` and `flask`: *pip install gevent flask*
-  * Run *python run_server.py*
+  * Run `npm install && npm run build` in `web/ui`.
+  * Install `gevent` and `flask`: `pip install gevent flask`
+  * Run `python run_server.py`
   * Open [http://localhost:44399](http://localhost:44399) to play it in the browser.
 
 ## Reference ##
