@@ -1,7 +1,7 @@
 # Playing Othello(Reversi) By Reinforcement Learning #
 
 ## Introduction ##
-This is a simple application that learn playing Othello by
+This is a simple application that learns to play Othello by
 *reinforcement learning*.
 
 TD(0) is used to evaluate a policy.
