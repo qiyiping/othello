@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 import numpy as np
 from contextlib import contextmanager
 import sys
@@ -30,7 +32,7 @@ class Board(object):
 
     def init_board(self):
         self._board = np.zeros((self._size, self._size), dtype=np.int)
-        i = self._size / 2
+        i = self._size // 2
         self._board[i-1][i-1] = Board.WHITE
         self._board[i-1][i] = Board.BLACK
         self._board[i][i] = Board.WHITE
@@ -223,13 +225,13 @@ class Game(object):
                     board.flip(i, j, self._players[turn].role)
                     idx = pos.index((i,j))
                     if self._verbose > 1:
-                        print "player {0}: {1}".format(self._players[turn].role, chr(ord("A") + idx))
+                        print("player {0}: {1}".format(self._players[turn].role, chr(ord("A") + idx)))
                 except:
                     if self._verbose > 0:
-                        print "player {0} failed".format(self._players[turn].role)
-                        print "-"*60
+                        print("player {0} failed".format(self._players[turn].role))
+                        print("-"*60)
                         traceback.print_exc()
-                        print "-"*60
+                        print("-"*60)
                     break
             turn = (turn+1) % 2
 
@@ -237,11 +239,11 @@ class Game(object):
             p.end_of_game(board)
 
         if self._verbose > 1:
-            print '-'*60
-            print 'final result'
-            print '-'*60
+            print('-'*60)
+            print('final result')
+            print('-'*60)
             board.print_for_player(Board.BLANK)
-            print '-'*60
+            print('-'*60)
 
         black_score = board.score(Board.BLACK)
         white_score = board.score(Board.WHITE)

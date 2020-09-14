@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 import numpy as np
 
 from othello import Board, Game
@@ -34,7 +36,7 @@ def tell_game_stat(game):
     b,w,t = game.game_stat()
     num_of_games = b + w + t
     info_template = "total games: {}, black wins: {} {}, white wins: {} {}, ties: {}"
-    print info_template.format(num_of_games,
+    print(info_template.format(num_of_games,)
                                b,
                                1.*b/num_of_games,
                                w,
@@ -62,10 +64,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     player_config = Config(args.conf)
 
-    print '-' * 70
-    print "CONFIG"
-    print '-' * 70
+    print('-' * 70)
+    print("CONFIG")
+    print('-' * 70)
     player_config.print_config()
-    print '-' * 70
+    print('-' * 70)
 
     play(args.games, args.verbose, player_config)

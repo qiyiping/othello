@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from __future__ import print_function
 import struct
 import gzip
 
@@ -36,7 +36,7 @@ class ThorDb(object):
 
     def add_file(self, file_name):
         self._games.extend(self._read_thor_file(file_name))
-        print "inconsistencies = ", self.inconsistencies
+        print("inconsistencies = ", self.inconsistencies)
 
     def _read_thor_file(self, file_name):
         file_header_size = 16

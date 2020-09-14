@@ -276,7 +276,7 @@ class Board extends Component {
     return (
       <div id="parent">
         <div id="board">
-          <select onChange={this.changePlayer} disabled>
+          <select onChange={this.changePlayer}>
             <option value="black">Black</option>
             <option value="white">White</option>
           </select>

@@ -20,7 +20,7 @@ Or you can try the simple web app:
   * Run `npm install && npm run build` in `web/ui`.
   * Install `gevent` and `flask`: `pip install gevent flask`
   * Run `python run_server.py`
-  * Open [http://localhost:44399](http://localhost:44399) and play!
+  * Open [http://localhost:44399/othello](http://localhost:44399/othello) and play!
 
 ## Reference ##
 - Jaśkowski, Wojciech (2014). Systematic n-tuple networks for

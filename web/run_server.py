@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 from web_app import app
 
 if __name__ == '__main__':
@@ -15,9 +17,12 @@ if __name__ == '__main__':
     access_log = open('./access.log', "a")
     error_log = open('./error.log', "a")
 
-    from gevent.wsgi import WSGIServer
-    http_server = WSGIServer(('0.0.0.0', 44399),
+    from gevent.pywsgi import WSGIServer
+    host = '0.0.0.0'
+    port = 44399
+    http_server = WSGIServer((host, port),
                              app,
                              log=access_log,
                              error_log=error_log)
+    print(f"http://{host}:{port}")
     http_server.serve_forever()

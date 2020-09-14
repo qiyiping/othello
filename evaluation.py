@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 from database import TextDb
 from value import ModelScorer
 from othello import Board
@@ -24,4 +26,4 @@ if __name__ == '__main__':
     model.load("/Users/qiyiping/Projects/qiyiping/othello/model/model.cpt.npy")
     db = TextDb("./database/validate.small.txt")
     n, mse = evaluate(db, model)
-    print "Number of Games:{}, MSE: {}".format(n, mse)
+    print("Number of Games:{}, MSE: {}".format(n, mse))

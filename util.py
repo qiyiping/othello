@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 import numpy as np
 import collections
 
-import ConfigParser
+import configparser
+
 
 def epsilon_greedy(epsilon, options, vals, max_player=True):
     r = np.random.rand()
@@ -69,15 +71,15 @@ class Hash(object):
 
 class Config(object):
     def __init__(self, filename):
-        self._config = ConfigParser.ConfigParser()
+        self._config = configparser.ConfigParser()
         self._config.read(filename)
 
     def print_config(self):
         sections = self._config.sections()
         for s in sections:
-            print s
+            print(s)
             for k,v in self._config.items(s):
-                print "\t", k, v
+                print("\t", k, v)
 
     def get_as_str(self, section, option, default=None):
         try:
