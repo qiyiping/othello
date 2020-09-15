@@ -42,8 +42,7 @@ class Board(object):
         self._board = np.array(board, dtype=np.int)
 
     def cache_status(self):
-        return "position cache: {}, state cache: {}".format(self._feasible_pos_cache.size(),
-                                                            self._board_state_cache.size())
+        return self._feasible_pos_cache.size(), self._board_state_cache.size()
 
     def feasible_pos(self, player, enable_cache=True):
         h = self._hash(self._board) + player
@@ -52,7 +51,7 @@ class Board(object):
 
         pos = []
         xs, ys = np.where(self._board == Board.BLANK)
-        for i,j in zip(xs, ys):
+        for i,j in zip(xs.tolist(), ys.tolist()):
             if self.is_feasible(i, j, player):
                 pos.append((i, j))
 
@@ -65,7 +64,7 @@ class Board(object):
             return self._board_state_cache.get(h)
 
         xs, ys = np.where(self._board == Board.BLANK)
-        for i,j in zip(xs, ys):
+        for i,j in zip(xs.tolist(), ys.tolist()):
             for di, dj in Board.DIRECTIONS:
                 black, white = False, False
                 for d in range(1, self._size):

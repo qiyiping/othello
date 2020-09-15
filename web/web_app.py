@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import sys
 sys.path.append("../")
 
@@ -13,8 +14,8 @@ from ai import Bot
 board = Board()
 model_file = "../model/model.cpt.npy.6"
 scorer = ModelScorer(model_file)
-black_bot = Bot(scorer, 4, 10, Board.BLACK)
-white_bot = Bot(scorer, 4, 10, Board.WHITE)
+black_bot = Bot(scorer, 6, 10, Board.BLACK)
+white_bot = Bot(scorer, 6, 10, Board.WHITE)
 
 role_mapping = { "black": (black_bot, Board.BLACK), "white": (white_bot, Board.WHITE) }
 
@@ -38,7 +39,6 @@ def new_game():
             "blackScore": 2,
             "whiteScore": 2,
             "turn": "black" }
-
     return jsonify(**ret)
 
 @app.route("/othello/play", methods=["POST"])
@@ -74,8 +74,8 @@ def play():
     ret = { "action": [r, c],
             "board": board.board.tolist(),
             "turn": next_role_name,
-            "blackScore": black_score,
-            "whiteScore": white_score,
+            "blackScore": int(black_score),
+            "whiteScore": int(white_score),
             "options": options }
 
     return jsonify(**ret)

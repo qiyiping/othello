@@ -31,7 +31,7 @@ def self_play(n, model):
 
         if t % 100 == 0:
             logging.info("Number of games played: {}".format(t))
-            logging.info(b.cache_status())
+            logging.info("position cache and state cache: ", b.cache_status())
 
         if t % 1000 == 0:
             model.save("./model/model.cpt")
