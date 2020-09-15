@@ -36,12 +36,12 @@ def tell_game_stat(game):
     b,w,t = game.game_stat()
     num_of_games = b + w + t
     info_template = "total games: {}, black wins: {} {}, white wins: {} {}, ties: {}"
-    print(info_template.format(num_of_games,)
+    print(info_template.format(num_of_games,
                                b,
                                1.*b/num_of_games,
                                w,
                                1.*w/num_of_games,
-                               t)
+                               t))
 
 def play(games, verbose, player_config):
     black_player = load_player(Board.BLACK, player_config)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="run.py", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--conf", default="./config/config.ini", help="player config")
     parser.add_argument("--verbose", default=1, type=int, help="verbose level")
-    parser.add_argument("--games", default=500000, type=int, help="number of games to play")
+    parser.add_argument("--games", default=100, type=int, help="number of games to play")
 
     args = parser.parse_args()
     player_config = Config(args.conf)

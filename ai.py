@@ -99,12 +99,15 @@ class Bot(Agent):
                                          final_depth)
         self._final_depth = final_depth
 
-    def play(self, board):
+    def _play(self, board):
         if board.blanks <= self._final_depth:
-            _, action = self._final_searcher.search(board, self.role)
+            r, action = self._final_searcher.search(board, self.role)
         else:
-            _, action = self._default_searcher.search(board, self.role)
-        return action
+            r, action = self._default_searcher.search(board, self.role)
+        return r, action
+
+    def play(self, board):
+        return self._play(board)[1]
 
 
 

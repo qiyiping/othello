@@ -12,7 +12,7 @@ from value import ModelScorer, ScorerWrapper
 from ai import Bot
 
 board = Board()
-model_file = "../model/model.cpt.npy.6"
+model_file = "../model/model.cpt.npy"
 scorer = ModelScorer(model_file)
 black_bot = Bot(scorer, 6, 10, Board.BLACK)
 white_bot = Bot(scorer, 6, 10, Board.WHITE)

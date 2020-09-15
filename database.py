@@ -114,7 +114,7 @@ class TextDb(object):
     def _parse(self, l):
         moves = []
         tokens = l.strip().split(':')
-        steps = len(tokens[0])/3
+        steps = len(tokens[0])//3
 
         for idx in range(0, steps):
             if l[3*idx] == '+':

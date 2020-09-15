@@ -56,7 +56,7 @@ class ModelScorer(Scorer):
 
         self._weights = np.zeros([self._num_of_stages(),
                                   num_of_weights * 9])
-        self._patterns = zip(directions, corners)
+        self._patterns = list(zip(directions, corners))
 
         self._learning_rate = learning_rate
         self._gamma = gamma
