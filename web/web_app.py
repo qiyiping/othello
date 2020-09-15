@@ -14,8 +14,8 @@ from ai import Bot
 board = Board()
 model_file = "../model/model.cpt.npy"
 scorer = ModelScorer(model_file)
-black_bot = Bot(scorer, 6, 10, Board.BLACK)
-white_bot = Bot(scorer, 6, 10, Board.WHITE)
+black_bot = Bot(scorer, 4, 10, Board.BLACK)
+white_bot = Bot(scorer, 4, 10, Board.WHITE)
 
 role_mapping = { "black": (black_bot, Board.BLACK), "white": (white_bot, Board.WHITE) }
 

@@ -11,7 +11,7 @@ def self_play(n, model):
     b = Board()
     black_bot = Bot(model, 4, 6, Board.BLACK)
     white_bot = Bot(model, 4, 6, Board.WHITE)
-    eplison = 0.2
+    eplison = 0.05
 
     for t in range(1, n+1):
         b.init_board()
@@ -27,14 +27,12 @@ def self_play(n, model):
                 else:
                     gr, (ga0, ga1) = white_bot._play(b)
                     gr = -gr
-                print(f"{p}: val = {gr}, action = {ga0}, {ga1}")
                 for i,j in options:
                     with b.flip2(i, j, p):
                         if b.is_terminal_state():
                             vals.append(b.score(Board.BLACK) - b.score(Board.WHITE))
                         else:
                             vals.append(model(b))
-                print(f"options: {options}, vals: {vals}")
                 (a0, a1), v = epsilon_greedy(eplison, options, vals, (ga0, ga1), gr)
                 model.update(b, v)
                 b.flip(a0, a1, p)
