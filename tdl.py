@@ -9,8 +9,8 @@ from ai import Bot
 
 def self_play(n, model):
     b = Board()
-    black_bot = Bot(model, 4, 6, Board.BLACK)
-    white_bot = Bot(model, 4, 6, Board.WHITE)
+    black_bot = Bot(model, 3, 6, Board.BLACK)
+    white_bot = Bot(model, 3, 6, Board.WHITE)
     eplison = 0.05
 
     for t in range(1, n+1):
@@ -49,7 +49,7 @@ def self_play(n, model):
 if __name__ == '__main__':
     logging.basicConfig(filename='tdl.log',level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 
-    model = ModelScorer(learning_rate=0.005, gamma=0.001)
+    model = ModelScorer(learning_rate=0.001, gamma=0.01)
     model.load("./model/model.cpt.npy.6")
 
     self_play(700000, model)
